@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -21,14 +21,365 @@
   <b>Sovereign MCP Platform &middot; Solution Design &mdash; one LangGraph agent, two MCP servers, one shared local model; answer from the corpus with citations, OCR only what the index cannot see, and refuse when it cannot be grounded</b>
   <span>Fully offline &middot; zero writes to C:\ &middot; Phases 1&ndash;6 complete</span>
 </div>
-
 <div class="stage">
-  <img src="architecture.svg" alt="Solution design diagram in four bands. Band 1, query path: a question reaches the agent, which discovers capabilities from both servers, runs a vector search, lets Qwen3-4B decide, parses and OCRs any file the index cannot see, and returns a grounded answer or an explicit refusal. Band 2, MCP surface: rag_server exposes a search tool, a chunk resource and an answer prompt; docs_server exposes four parsing tools; tools and prompts are owned by the servers while resources are bridged by the host. Band 3, runtime: a Windows host contains a WSL2 DockerEngine distro holding the agent, both servers and a bind-mounted data directory, with a Windows port proxy forwarding reasoning calls to a loopback-bound llama-server. Band 4, governance: zero writes to C drive, exactly one LLM instance, auth at the transport edge, and no network egress after setup." style="width:100%;height:auto;max-width:1580px;background:#fff;border-radius:16px;box-shadow:0 24px 70px rgba(10,37,64,.55)">
-</div>
+<svg viewBox="0 0 1600 1340" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, DejaVu Sans, Arial, sans-serif">
+  <defs>
+    <linearGradient id="az"      x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E9BD7"/><stop offset="1" stop-color="#0B6BB3"/></linearGradient>
+    <linearGradient id="azT"     x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8446c9"/><stop offset="1" stop-color="#5a17a0"/></linearGradient>
+    <linearGradient id="azC"     x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#25c3bd"/><stop offset="1" stop-color="#0a8293"/></linearGradient>
+    <linearGradient id="azG"     x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3fae7a"/><stop offset="1" stop-color="#2e8f5c"/></linearGradient>
+    <linearGradient id="azHero"  x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B6BB3"/><stop offset="1" stop-color="#0A2540"/></linearGradient>
+    <linearGradient id="azHeroC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a8293"/><stop offset="1" stop-color="#0a3a52"/></linearGradient>
+    <linearGradient id="azHeroP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a1fa2"/><stop offset="1" stop-color="#3a1660"/></linearGradient>
+    <linearGradient id="azGold"  x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8a815"/><stop offset="1" stop-color="#c07d08"/></linearGradient>
 
+    <filter id="tsh" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0A2540" flood-opacity="0.28"/></filter>
+
+    <marker id="aN"    markerWidth="9" markerHeight="9" refX="7" refY="3.6" orient="auto"><path d="M0,0 L7.5,3.6 L0,7.2 Z" fill="#0B6BB3"/></marker>
+    <marker id="aC"    markerWidth="9" markerHeight="9" refX="7" refY="3.6" orient="auto"><path d="M0,0 L7.5,3.6 L0,7.2 Z" fill="#0a8293"/></marker>
+    <marker id="aP"    markerWidth="9" markerHeight="9" refX="7" refY="3.6" orient="auto"><path d="M0,0 L7.5,3.6 L0,7.2 Z" fill="#7a1fa2"/></marker>
+    <marker id="aG"    markerWidth="9" markerHeight="9" refX="7" refY="3.6" orient="auto"><path d="M0,0 L7.5,3.6 L0,7.2 Z" fill="#2e8f5c"/></marker>
+    <marker id="aA"    markerWidth="9" markerHeight="9" refX="7" refY="3.6" orient="auto"><path d="M0,0 L7.5,3.6 L0,7.2 Z" fill="#c9760f"/></marker>
+    <marker id="aGrey" markerWidth="9" markerHeight="9" refX="7" refY="3.6" orient="auto"><path d="M0,0 L7.5,3.6 L0,7.2 Z" fill="#6b7d8d"/></marker>
+
+    <symbol id="g-user"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></symbol>
+    <symbol id="g-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.4"/><path d="M15.2 15.2 20.5 20.5"/></symbol>
+    <symbol id="g-doc"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5h8l4 4v15H6z"/><path d="M14 2.5V6.5h4M9 12h6M9 16h6"/></symbol>
+    <symbol id="g-scan"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8V4.5H7M17 4.5h3.5V8M20.5 16v3.5H17M7 19.5H3.5V16"/><path d="M3.5 12h17"/></symbol>
+    <symbol id="g-chat"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5.5h17v11h-9L6 20.5v-4H3.5z"/><path d="M7.5 10h9M7.5 13h6"/></symbol>
+    <symbol id="g-check"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M8 12.4l2.6 2.6L16.2 9"/></symbol>
+    <symbol id="g-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 20 5.5v6c0 5-3.5 8.2-8 9.9C7.5 19.7 4 16.5 4 11.5v-6z"/><path d="M8.6 12.2l2.3 2.3 4.4-4.6"/></symbol>
+    <symbol id="g-db"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.6" rx="7" ry="2.8"/><path d="M5 5.6v12.8c0 1.55 3.1 2.8 7 2.8s7-1.25 7-2.8V5.6"/><path d="M5 12c0 1.55 3.1 2.8 7 2.8s7-1.25 7-2.8"/></symbol>
+    <symbol id="g-cube"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6 20.5 7v10L12 21.4 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5V21.4"/></symbol>
+    <symbol id="g-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 21 8 12 13 3 8z"/><path d="M3 12l9 5 9-5M3 16l9 5 9-5"/></symbol>
+    <symbol id="g-cog"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9 19 19M19 5l-2.1 2.1M7.1 16.9 5 19"/></symbol>
+    <symbol id="g-win"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.2 11 5v6.4H3.5zM12.6 4.8 20.5 3.6v7.8h-7.9zM3.5 12.6H11V19l-7.5-1.2zM12.6 12.6h7.9v7.8l-7.9-1.2z"/></symbol>
+    <symbol id="g-key"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="12" r="3.8"/><path d="M11.3 12H21M18 12v3.4M14.6 12v2.6"/></symbol>
+    <symbol id="g-gauge"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 18a9.5 9.5 0 1 1 17.2 0"/><path d="M12 18l4.6-6"/><circle cx="12" cy="18" r="1.4" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="g-plug"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5v6M15 2.5v6"/><path d="M5.5 8.5h13v3a6.5 6.5 0 0 1-13 0z"/><path d="M12 18v3.5"/></symbol>
+    <symbol id="g-chip"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/><path d="M9.5 2.8v3.7M14.5 2.8v3.7M9.5 17.5v3.7M14.5 17.5v3.7M2.8 9.5h3.7M2.8 14.5h3.7M17.5 9.5h3.7M17.5 14.5h3.7"/></symbol>
+  </defs>
+
+  <!-- Opaque page so the standalone PNG is not rendered on transparency. -->
+  <rect width="1600" height="1340" fill="#ffffff"/>
+
+  <!-- ================= TITLE ================= -->
+  <text x="48" y="46" font-size="21" font-weight="800" fill="#0a3a66">Sovereign MCP Platform &#183; Solution Design &#8212; one agent, two MCP servers, one local model, nothing leaves the machine</text>
+  <text x="48" y="68" font-size="12.2" fill="#5b7186">Answer from a local corpus <tspan font-weight="700" fill="#0a6bc2">with citations</tspan>, reach for OCR only when the index cannot see the file, refuse to answer when the corpus <tspan font-weight="700" fill="#0a8293">does not support it</tspan> &#8212; on ONE workstation, <tspan font-weight="700" fill="#c07d08">fully offline</tspan>, with zero writes to C:\.</text>
+  <rect x="48" y="78" width="640" height="3" rx="2" fill="#0a6bc2"/>
+
+  <!-- ================= BAND 1 : QUERY PATH ================= -->
+  <rect x="40" y="98" width="1520" height="272" rx="14" fill="#f6fbff" stroke="#7fb0dd"/>
+  <text x="60" y="124" font-size="13" font-weight="800" fill="#0a3a66">&#9312; QUERY PATH &#8212; question &#8594; discover capabilities &#8594; search the index &#8594; parse what the index cannot see &#8594; grounded answer</text>
+  <text x="60" y="142" font-size="9.4" fill="#0a6bc2"><tspan font-weight="700">The agent decides; the servers declare.</tspan> Routing is driven entirely by what each server advertises at connect time &#8212; adding a third server needs no change to the reasoning loop.</text>
+
+  <!-- question -->
+  <rect x="60" y="158" width="188" height="92" rx="12" fill="#eef7ff" stroke="#7fb0dd"/>
+  <g filter="url(#tsh)"><rect x="74" y="170" width="32" height="32" rx="8" fill="url(#az)"/></g><use href="#g-user" x="82" y="178" width="16" height="16" style="color:#fff"/>
+  <text x="116" y="182" font-size="11" font-weight="700" fill="#0a3a66">Question</text>
+  <text x="116" y="197" font-size="8.7" fill="#5b7186">CLI or compose run</text>
+  <text x="74" y="218" font-size="8.7" fill="#5b7186">natural language, no schema</text>
+  <text x="74" y="231" font-size="8.7" fill="#5b7186">the user never names a tool</text>
+  <text x="74" y="243" font-size="8.4" fill="#8aa0b3">routing is the agent's job, not theirs</text>
+
+  <!-- discovery -->
+  <g filter="url(#tsh)"><rect x="276" y="158" width="176" height="92" rx="12" fill="#ffffff" stroke="#7fb0dd"/></g>
+  <use href="#g-plug" x="288" y="168" width="20" height="20" style="color:#0a6bc2"/>
+  <text x="316" y="178" font-size="10.6" font-weight="700" fill="#0a3a66">1 &#183; Capability discovery</text>
+  <text x="288" y="199" font-size="8.5" fill="#5b7186"><tspan font-family="Consolas,monospace">tools/list</tspan> from both servers</text>
+  <text x="288" y="212" font-size="8.5" fill="#5b7186">merged into one namespace</text>
+  <text x="288" y="225" font-size="8.5" fill="#5b7186">JSON Schema passed through</text>
+  <text x="288" y="240" font-size="8.3" fill="#8aa0b3">colliding names get server-prefixed</text>
+
+  <!-- search -->
+  <g filter="url(#tsh)"><rect x="480" y="158" width="176" height="92" rx="12" fill="#ffffff" stroke="#7fb0dd"/></g>
+  <use href="#g-search" x="492" y="168" width="20" height="20" style="color:#0a8293"/>
+  <text x="520" y="178" font-size="10.6" font-weight="700" fill="#0a3a66">2 &#183; Vector search</text>
+  <text x="492" y="199" font-size="8.5" fill="#5b7186">bge-small-en-v1.5, 384-dim</text>
+  <text x="492" y="212" font-size="8.5" fill="#5b7186">cosine top-k over ChromaDB</text>
+  <text x="492" y="225" font-size="8.5" fill="#5b7186"><tspan font-weight="700">0.50 relevance floor</tspan></text>
+  <text x="492" y="240" font-size="8.3" fill="#8aa0b3">below it: reported as no match</text>
+
+  <!-- llm hero -->
+  <g filter="url(#tsh)"><rect x="684" y="152" width="224" height="104" rx="14" fill="url(#azHero)"/></g>
+  <use href="#g-chat" x="700" y="164" width="20" height="20" style="color:#bfe3ff"/>
+  <text x="730" y="178" font-size="11.8" font-weight="800" fill="#ffffff">3 &#183; Qwen3-4B decides</text>
+  <line x1="700" y1="188" x2="892" y2="188" stroke="#4f9bd6" stroke-width="1"/>
+  <text x="700" y="204" font-size="8.9" fill="#dbeeff">OpenAI-compatible tool calls, parsed</text>
+  <text x="700" y="217" font-size="8.9" fill="#dbeeff">natively &#8212; no <tspan font-family="Consolas,monospace">--jinja</tspan> needed</text>
+  <text x="700" y="232" font-size="8.9" fill="#dbeeff">explicit LangGraph <tspan font-weight="800" fill="#ffe6a8">StateGraph</tspan>, not a</text>
+  <text x="700" y="247" font-size="8.4" fill="#9fc9ee">prebuilt ReAct loop &#183; capped at 6 tool rounds</text>
+
+  <!-- ocr -->
+  <g filter="url(#tsh)"><rect x="936" y="158" width="176" height="92" rx="12" fill="#f6effc" stroke="#b58fd8"/></g>
+  <use href="#g-scan" x="948" y="168" width="20" height="20" style="color:#6a17a0"/>
+  <text x="976" y="178" font-size="10.6" font-weight="700" fill="#3a1660">4 &#183; Parse &#183; OCR</text>
+  <text x="948" y="199" font-size="8.5" fill="#5a4a75">only when the index cannot</text>
+  <text x="948" y="212" font-size="8.5" fill="#5a4a75">see the file &#8212; scans, images</text>
+  <text x="948" y="225" font-size="8.5" fill="#5a4a75">pdfminer first, Tesseract after</text>
+  <text x="948" y="240" font-size="8.3" fill="#9a8fb3">text-native pages never hit OCR</text>
+
+  <!-- answer -->
+  <g filter="url(#tsh)"><rect x="1140" y="158" width="176" height="92" rx="12" fill="#f2fbf6" stroke="#7cc79b"/></g>
+  <use href="#g-check" x="1152" y="168" width="20" height="20" style="color:#2e8f5c"/>
+  <text x="1180" y="178" font-size="10.6" font-weight="700" fill="#1c6b41">5 &#183; Grounded answer</text>
+  <text x="1152" y="199" font-size="8.5" fill="#3f6b52">cited to the source filename</text>
+  <text x="1152" y="212" font-size="8.5" fill="#3f6b52">and, where useful, the chunk id</text>
+  <text x="1152" y="225" font-size="8.5" fill="#3f6b52">or an explicit refusal</text>
+  <text x="1152" y="240" font-size="8.3" fill="#7d9a89">no outside knowledge, ever</text>
+
+  <!-- abstention note -->
+  <g filter="url(#tsh)"><rect x="1340" y="158" width="200" height="92" rx="12" fill="#fff9ec" stroke="#e0a92e" stroke-width="1.7"/></g>
+  <use href="#g-shield" x="1352" y="168" width="20" height="20" style="color:#c9760f"/>
+  <text x="1380" y="178" font-size="10.6" font-weight="700" fill="#8a5310">Refusal is a feature</text>
+  <text x="1352" y="199" font-size="8.5" fill="#7a5a20">"What was the rainfall in</text>
+  <text x="1352" y="212" font-size="8.5" fill="#7a5a20">Muscat in 1997?" returns a</text>
+  <text x="1352" y="225" font-size="8.5" fill="#7a5a20">refusal, not a number.</text>
+  <text x="1352" y="241" font-size="8.3" fill="#a98b4e">the test asserts none was invented</text>
+
+  <!-- band1 connectors -->
+  <path d="M248,204 H276"  fill="none" stroke="#0B6BB3" stroke-width="2.4" marker-end="url(#aN)"/>
+  <path d="M452,204 H480"  fill="none" stroke="#0B6BB3" stroke-width="2.4" marker-end="url(#aN)"/>
+  <path d="M656,204 H684"  fill="none" stroke="#0B6BB3" stroke-width="2.4" marker-end="url(#aN)"/>
+  <path d="M908,204 H936"  fill="none" stroke="#7a1fa2" stroke-width="2.4" marker-end="url(#aP)"/>
+  <path d="M1112,204 H1140" fill="none" stroke="#2e8f5c" stroke-width="2.4" marker-end="url(#aG)"/>
+
+  <!-- band1 row2 -->
+  <rect x="60" y="268" width="736" height="84" rx="12" fill="#eef7ff" stroke="#bcd8ef"/>
+  <use href="#g-search" x="76" y="280" width="18" height="18" style="color:#0a6bc2"/>
+  <text x="104" y="286" font-size="10.6" font-weight="800" fill="#0a3a66">The disclosure that makes multi-server routing work</text>
+  <text x="78" y="308" font-size="9.2" fill="#33485c"><tspan font-weight="700" fill="#0a6bc2">The index and the corpus are not the same set.</tspan> <tspan font-family="Consolas,monospace">search_documents</tspan> reports files it has no chunks for.</text>
+  <text x="78" y="326" font-size="9.2" fill="#33485c">Without that line the agent abstained on a question whose answer sat in an un-ingested scanned PDF.</text>
+  <text x="78" y="344" font-size="8.6" fill="#8aa0b3">rag_server knows this from its own index and its own corpus directory &#8212; it never learns that docs_server exists.</text>
+
+  <rect x="816" y="268" width="724" height="84" rx="12" fill="#f6effc" stroke="#c7abe4"/>
+  <use href="#g-cog" x="832" y="280" width="18" height="18" style="color:#6a17a0"/>
+  <text x="860" y="286" font-size="10.6" font-weight="800" fill="#5f2ba0">Prompts are server-scoped; orchestration is not</text>
+  <text x="834" y="308" font-size="9.2" fill="#5a4a75"><tspan font-family="Consolas,monospace" font-weight="700">rag_answer</tspan> tells the model to abstain when search finds nothing &#8212; right alone, wrong once a parser exists.</text>
+  <text x="834" y="326" font-size="9.2" fill="#5a4a75">Cross-server guidance is composed by the <tspan font-weight="700">host</tspan>, from its live routing table. Neither server is modified.</text>
+  <text x="834" y="344" font-size="8.6" fill="#8f80ab">It rides in the user message: a 4B model follows the closing numbered instruction over anything in the system prompt.</text>
+
+  <!-- ================= BAND 2 : MCP SURFACE ================= -->
+  <rect x="40" y="390" width="1520" height="300" rx="14" fill="#eefaf9" stroke="#4fbfb8"/>
+  <text x="60" y="416" font-size="13" font-weight="800" fill="#086f7d">&#9313; MCP SURFACE &#8212; what each server exposes, and which side of the protocol owns it</text>
+  <text x="60" y="434" font-size="9.4" fill="#0a8293"><tspan font-weight="700">All three primitives are exercised end to end.</tspan> Tools and prompts belong to the servers; resources are host-controlled, so the host has to bridge them.</text>
+
+  <!-- rag hero -->
+  <g filter="url(#tsh)"><rect x="60" y="450" width="300" height="152" rx="13" fill="url(#azHeroC)"/></g>
+  <use href="#g-db" x="76" y="462" width="20" height="20" style="color:#b6f0ec"/>
+  <text x="106" y="476" font-size="11.6" font-weight="800" fill="#ffffff">rag_server</text>
+  <line x1="76" y1="486" x2="344" y2="486" stroke="#3e9aa4" stroke-width="1"/>
+  <text x="76" y="503" font-size="8.9" fill="#d5f4f2"><tspan font-weight="800" fill="#ffe6a8">tool</tspan> &#183; <tspan font-family="Consolas,monospace">search_documents(query)</tspan></text>
+  <text x="76" y="518" font-size="8.9" fill="#d5f4f2"><tspan font-weight="800" fill="#ffe6a8">resource</tspan> &#183; <tspan font-family="Consolas,monospace">chunk://{chunk_id}</tspan></text>
+  <text x="76" y="533" font-size="8.9" fill="#d5f4f2"><tspan font-weight="800" fill="#ffe6a8">prompt</tspan> &#183; <tspan font-family="Consolas,monospace">rag_answer(question)</tspan></text>
+  <text x="76" y="553" font-size="8.6" fill="#8fd4d0">ChromaDB, file-based &#183; embeddings baked into the image</text>
+  <text x="76" y="567" font-size="8.6" fill="#8fd4d0">so the running container never reaches the network</text>
+  <text x="76" y="586" font-size="8.4" fill="#7dc3c0">chunking and IDs shared with the ingest script &#8212; they cannot drift</text>
+
+  <!-- docs hero -->
+  <g filter="url(#tsh)"><rect x="386" y="450" width="300" height="152" rx="13" fill="url(#azHeroP)"/></g>
+  <use href="#g-scan" x="402" y="462" width="20" height="20" style="color:#e6ccff"/>
+  <text x="432" y="476" font-size="11.6" font-weight="800" fill="#ffffff">docs_server</text>
+  <line x1="402" y1="486" x2="670" y2="486" stroke="#8d5cb5" stroke-width="1"/>
+  <text x="402" y="503" font-size="8.9" fill="#ecdcff"><tspan font-weight="800" fill="#ffe6a8">tools</tspan> &#183; <tspan font-family="Consolas,monospace">list_documents</tspan> &#183; <tspan font-family="Consolas,monospace">parse_document</tspan></text>
+  <text x="402" y="518" font-size="8.9" fill="#ecdcff">&#183; <tspan font-family="Consolas,monospace">ocr_image</tspan> &#183; <tspan font-family="Consolas,monospace">chunk_document</tspan></text>
+  <text x="402" y="537" font-size="8.6" fill="#c9a9e8">unstructured &#183; pdfminer &#183; Tesseract 5.5 &#183; poppler</text>
+  <text x="402" y="553" font-size="8.6" fill="#c9a9e8">containerised of necessity: Tesseract on Windows</text>
+  <text x="402" y="567" font-size="8.6" fill="#c9a9e8">would install into C:\Program Files</text>
+  <text x="402" y="586" font-size="8.4" fill="#b191d4">filenames are untrusted input &#8212; path traversal is refused</text>
+
+  <!-- primitive ownership -->
+  <rect x="712" y="442" width="424" height="168" rx="12" fill="#f4fdfc" stroke="#7fd4cf" stroke-dasharray="5 4"/>
+  <text x="726" y="458" font-size="9.4" font-weight="800" fill="#086f7d">PRIMITIVE OWNERSHIP &#8212; who decides what, and why it matters</text>
+
+  <g filter="url(#tsh)"><rect x="724" y="466" width="400" height="42" rx="10" fill="#ffffff" stroke="#4fbfb8"/></g>
+  <text x="738" y="483" font-size="9.8" font-weight="700" fill="#0a3a66">Tools &#8594; the server</text>
+  <text x="738" y="498" font-size="8.4" fill="#5b7186">Schema passes through untouched; adding a tool needs no host change</text>
+
+  <g filter="url(#tsh)"><rect x="724" y="514" width="400" height="42" rx="10" fill="#ffffff" stroke="#4fbfb8"/></g>
+  <text x="738" y="531" font-size="9.8" font-weight="700" fill="#0a3a66">Prompts &#8594; the server</text>
+  <text x="738" y="546" font-size="8.4" fill="#5b7186">Fetched via <tspan font-family="Consolas,monospace">prompts/get</tspan>, never hardcoded in the host</text>
+
+  <g filter="url(#tsh)"><rect x="724" y="562" width="400" height="42" rx="10" fill="#fff9ec" stroke="#e0a92e"/></g>
+  <text x="738" y="579" font-size="9.8" font-weight="700" fill="#8a5310">Resources &#8594; bridged by the host</text>
+  <text x="738" y="594" font-size="8.4" fill="#7a5a20">Not model-addressable, so <tspan font-family="Consolas,monospace">chunk://</tspan> is re-exposed as a tool</text>
+
+  <!-- transports -->
+  <rect x="1160" y="442" width="380" height="168" rx="12" fill="#eefaf9" stroke="#7fd4cf"/>
+  <use href="#g-plug" x="1174" y="454" width="18" height="18" style="color:#086f7d"/>
+  <text x="1200" y="462" font-size="10.4" font-weight="800" fill="#086f7d">One server object, two transports</text>
+  <text x="1176" y="486" font-size="9" fill="#33485c"><tspan font-family="Consolas,monospace" font-weight="700">stdio</tspan> &#8212; no socket at all. Stronger posture: no port to</text>
+  <text x="1176" y="499" font-size="9" fill="#33485c">firewall, no key to rotate, no session to hijack.</text>
+  <text x="1176" y="518" font-size="9" fill="#33485c"><tspan font-family="Consolas,monospace" font-weight="700">HTTP</tspan> &#8212; streamable, gated by <tspan font-family="Consolas,monospace">x-api-key</tspan>.</text>
+  <text x="1176" y="536" font-size="8.6" fill="#5b7186">Selected by a flag, not a fork of the server: transport</text>
+  <text x="1176" y="549" font-size="8.6" fill="#5b7186">and authorisation are separable from capability.</text>
+  <text x="1176" y="571" font-size="8.6" fill="#8a5310"><tspan font-weight="700">stdio cannot cross a container boundary</tspan> &#8212; it needs a</text>
+  <text x="1176" y="584" font-size="8.6" fill="#8a5310">parent owning the child's stdio, and siblings share none.</text>
+  <text x="1176" y="600" font-size="8.3" fill="#a98b4e">So the Phase 5 auth work turned out to be a prerequisite, not a demo.</text>
+
+  <!-- band2 connectors -->
+  <path d="M360,526 H386" fill="none" stroke="#0a8293" stroke-width="2.4" marker-end="url(#aC)"/>
+  <path d="M686,526 H712" fill="none" stroke="#7a1fa2" stroke-width="2.4" marker-end="url(#aP)"/>
+
+  <!-- band2 footer -->
+  <rect x="60" y="620" width="1480" height="52" rx="11" fill="#f4fdfc" stroke="#bfe6e3"/>
+  <use href="#g-check" x="76" y="632" width="18" height="18" style="color:#0a8293"/>
+  <text x="104" y="640" font-size="9.8" font-weight="800" fill="#086f7d">Verified, not asserted</text>
+  <text x="104" y="658" font-size="8.9" fill="#33485c">pdfminer extracts <tspan font-weight="700">zero characters</tspan> from the OCR fixture &#183; a paraphrase sharing no keywords retrieves the right passage at <tspan font-weight="700">0.718</tspan> &#183; a keyless POST <tspan font-weight="700">inside</tspan> the compose network returns <tspan font-family="Consolas,monospace" font-weight="700">401</tspan> &#183; <tspan font-weight="700">zero</tspan> huggingface requests at runtime &#183; <tspan font-family="Consolas,monospace">docker volume ls</tspan> is empty</text>
+
+  <!-- ================= BAND 3 : RUNTIME ================= -->
+  <rect x="40" y="710" width="1520" height="290" rx="14" fill="#f7f1fc" stroke="#b58fd8"/>
+  <text x="60" y="736" font-size="13" font-weight="800" fill="#5f2ba0">&#9314; RUNTIME &amp; DEPLOYMENT &#8212; where every byte actually lives, and how the model is reached</text>
+  <text x="60" y="754" font-size="9.4" fill="#6a17a0"><tspan font-weight="700">Docker Engine runs inside a custom-imported WSL2 distro</tspan>, not Docker Desktop, so the data-root sits on M:\ by construction rather than by configuration that could drift.</text>
+
+  <!-- windows host container -->
+  <rect x="60" y="776" width="1044" height="210" rx="12" fill="#f5f8fb" stroke="#a9c4dc" stroke-dasharray="5 4"/>
+  <use href="#g-win" x="74" y="786" width="18" height="18" style="color:#3a4a58"/>
+  <text x="100" y="800" font-size="10.6" font-weight="700" fill="#3a4a58">Windows 11 host &#8212; <tspan font-family="Consolas,monospace">M:\MCP_Project</tspan></text>
+
+  <rect x="76" y="808" width="1012" height="172" rx="11" fill="#ffffff" stroke="#a9c4dc" stroke-dasharray="5 4"/>
+  <use href="#g-layers" x="90" y="816" width="17" height="17" style="color:#3a4a58"/>
+  <text x="114" y="828" font-size="10" font-weight="700" fill="#3a4a58">WSL2 distro &#183; DockerEngine</text>
+  <text x="316" y="828" font-size="8.6" fill="#8aa0b3"><tspan font-family="Consolas,monospace">ext4.vhdx</tspan> imported onto M:\ &#183; compose network only, no published ports</text>
+
+  <g filter="url(#tsh)"><rect x="92" y="838" width="228" height="124" rx="12" fill="url(#azHero)"/></g>
+  <use href="#g-cube" x="106" y="850" width="19" height="19" style="color:#bfe3ff"/>
+  <text x="134" y="863" font-size="11" font-weight="800" fill="#ffffff">agent</text>
+  <line x1="106" y1="872" x2="306" y2="872" stroke="#4f9bd6" stroke-width="1"/>
+  <text x="106" y="888" font-size="8.6" fill="#dbeeff">LangGraph MCP host &#183; one-shot</text>
+  <text x="106" y="901" font-size="8.6" fill="#dbeeff"><tspan font-family="Consolas,monospace">compose run --rm agent "..."</tspan></text>
+  <text x="106" y="917" font-size="8.6" fill="#dbeeff">server URLs set &#8594; HTTP; unset &#8594; stdio</text>
+  <text x="106" y="933" font-size="8.4" fill="#9fc9ee">the reasoning loop never learns which</text>
+  <text x="106" y="952" font-size="8.4" fill="#ffe6a8">agent:0.3.0 &#183; 355 MB</text>
+
+  <g filter="url(#tsh)"><rect x="336" y="838" width="228" height="124" rx="12" fill="#ffffff" stroke="#4fbfb8"/></g>
+  <use href="#g-db" x="348" y="848" width="19" height="19" style="color:#0a8293"/>
+  <text x="376" y="860" font-size="10.4" font-weight="700" fill="#0a3a66">rag_server &#183; :8765</text>
+  <text x="348" y="882" font-size="8.5" fill="#5b7186">vector search over the corpus</text>
+  <text x="348" y="895" font-size="8.5" fill="#5b7186">model warmed before listening</text>
+  <text x="348" y="908" font-size="8.5" fill="#5b7186">so no request pays for load</text>
+  <text x="348" y="926" font-size="8.3" fill="#8aa0b3">lazy loading had made a build-time</text>
+  <text x="348" y="937" font-size="8.3" fill="#8aa0b3">dependency into a runtime one</text>
+  <text x="348" y="955" font-size="8.4" fill="#c9760f">rag_server:0.2.0 &#183; 933 MB &#8212; over budget</text>
+
+  <g filter="url(#tsh)"><rect x="580" y="838" width="228" height="124" rx="12" fill="#ffffff" stroke="#b58fd8"/></g>
+  <use href="#g-scan" x="592" y="848" width="19" height="19" style="color:#6a17a0"/>
+  <text x="620" y="860" font-size="10.4" font-weight="700" fill="#3a1660">docs_server &#183; :8766</text>
+  <text x="592" y="882" font-size="8.5" fill="#5a4a75">PDF parsing and OCR</text>
+  <text x="592" y="895" font-size="8.5" fill="#5a4a75">Tesseract lives in the image,</text>
+  <text x="592" y="908" font-size="8.5" fill="#5a4a75">never on the Windows host</text>
+  <text x="592" y="926" font-size="8.3" fill="#9a8fb3">unstructured base only &#8212; the [pdf]</text>
+  <text x="592" y="937" font-size="8.3" fill="#9a8fb3">extra pulls PyTorch and ~4 GB</text>
+  <text x="592" y="955" font-size="8.4" fill="#2e8f5c">docs_server:0.1.0 &#183; 1.23 GB &#8212; in budget</text>
+
+  <g filter="url(#tsh)"><rect x="824" y="838" width="248" height="124" rx="12" fill="#fdf4ff" stroke="#d886d8"/></g>
+  <use href="#g-cog" x="836" y="848" width="19" height="19" style="color:#a21caf"/>
+  <text x="864" y="860" font-size="10.4" font-weight="700" fill="#86198f">./data &#8212; bind mount only</text>
+  <text x="836" y="882" font-size="8.5" fill="#8b3a8b"><tspan font-family="Consolas,monospace">raw_docs/</tspan> source corpus</text>
+  <text x="836" y="895" font-size="8.5" fill="#8b3a8b"><tspan font-family="Consolas,monospace">chroma_db/</tspan> persisted vectors</text>
+  <text x="836" y="913" font-size="8.5" fill="#8b3a8b">mounted at <tspan font-family="Consolas,monospace">/app/data</tspan></text>
+  <text x="836" y="931" font-size="8.3" fill="#a86ba8">no top-level <tspan font-family="Consolas,monospace">volumes:</tspan> block, so nothing</text>
+  <text x="836" y="942" font-size="8.3" fill="#a86ba8">lands in Docker's internal volume store</text>
+  <text x="836" y="957" font-size="8.3" fill="#a86ba8">every byte stays visible on M:\</text>
+
+  <!-- port proxy -->
+  <g filter="url(#tsh)"><rect x="1128" y="790" width="204" height="180" rx="12" fill="#fff9ec" stroke="#e0a92e" stroke-width="1.7"/></g>
+  <use href="#g-plug" x="1140" y="802" width="19" height="19" style="color:#c9760f"/>
+  <text x="1168" y="814" font-size="10.4" font-weight="700" fill="#8a5310">Port proxy</text>
+  <text x="1140" y="838" font-size="8.6" fill="#7a5a20"><tspan font-family="Consolas,monospace">172.28.64.1:8001</tspan></text>
+  <text x="1140" y="851" font-size="8.6" fill="#7a5a20">&#8594; <tspan font-family="Consolas,monospace">127.0.0.1:8001</tspan></text>
+  <text x="1140" y="872" font-size="8.5" fill="#7a5a20">netsh portproxy, firewall</text>
+  <text x="1140" y="885" font-size="8.5" fill="#7a5a20">scoped to the WSL subnet</text>
+  <text x="1140" y="906" font-size="8.4" fill="#a98b4e">the model is shared with</text>
+  <text x="1140" y="918" font-size="8.4" fill="#a98b4e">another project, so it is</text>
+  <text x="1140" y="930" font-size="8.4" fill="#a98b4e">never restarted to suit us</text>
+  <text x="1140" y="951" font-size="8.3" fill="#8a5310"><tspan font-weight="700">host-gateway would not work</tspan></text>
+  <text x="1140" y="963" font-size="8.3" fill="#a98b4e">it resolves to the distro itself</text>
+
+  <!-- llama hero -->
+  <g filter="url(#tsh)"><rect x="1356" y="790" width="184" height="180" rx="13" fill="url(#azGold)"/></g>
+  <use href="#g-chip" x="1368" y="802" width="20" height="20" style="color:#fff5da"/>
+  <text x="1396" y="814" font-size="11" font-weight="800" fill="#ffffff">llama-server</text>
+  <line x1="1368" y1="824" x2="1526" y2="824" stroke="#e6c887" stroke-width="1"/>
+  <text x="1368" y="842" font-size="8.7" fill="#fff3d4">Qwen3-4B-Instruct-2507</text>
+  <text x="1368" y="856" font-size="8.7" fill="#fff3d4">Q4_K_M &#183; GPU-resident</text>
+  <text x="1368" y="870" font-size="8.7" fill="#fff3d4"><tspan font-family="Consolas,monospace">-c 4096</tspan> &#183; q8_0 KV cache</text>
+  <text x="1368" y="890" font-size="8.5" fill="#ffe9bd">bound to <tspan font-family="Consolas,monospace">127.0.0.1</tspan>, so it</text>
+  <text x="1368" y="903" font-size="8.5" fill="#ffe9bd">is never exposed to the LAN</text>
+  <text x="1368" y="924" font-size="8.5" fill="#ffffff" font-weight="800">EXACTLY ONE INSTANCE</text>
+  <text x="1368" y="938" font-size="8.4" fill="#ffe9bd">no Ollama, no vLLM, no second</text>
+  <text x="1368" y="950" font-size="8.4" fill="#ffe9bd">llama-server, no cloud client</text>
+  <text x="1368" y="964" font-size="8.4" fill="#ffe9bd">&#8212; not even "just for testing"</text>
+
+  <!-- band3 connectors -->
+  <path d="M320,900 H336"   fill="none" stroke="#0a8293" stroke-width="2.4" marker-end="url(#aC)"/>
+  <path d="M564,900 H580"   fill="none" stroke="#7a1fa2" stroke-width="2.4" marker-end="url(#aP)"/>
+  <path d="M808,900 H824"   fill="none" stroke="#a21caf" stroke-width="2.4" marker-end="url(#aP)"/>
+  <path d="M206,838 V772 H1230 V786" fill="none" stroke="#c9760f" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#aA)"/>
+  <text x="600" y="766" font-size="8.8" font-weight="700" fill="#c9760f"><tspan font-family="Consolas,monospace">LLM_ENDPOINT=http://host.docker.internal:8001/v1</tspan> &#8212; every reasoning call, from every service</text>
+  <path d="M1332,880 H1352" fill="none" stroke="#c07d08" stroke-width="2.4" marker-end="url(#aA)"/>
+
+  <!-- ================= BAND 4 : GOVERNANCE ================= -->
+  <rect x="40" y="1020" width="1520" height="292" rx="14" fill="#eef7ff" stroke="#7fb0dd"/>
+  <text x="60" y="1046" font-size="13" font-weight="800" fill="#0a3a66">&#9315; GOVERNANCE &#8212; the four constraints this build is actually judged against, and how each is enforced rather than intended</text>
+
+  <g filter="url(#tsh)"><rect x="60" y="1064" width="356" height="152" rx="12" fill="#ffffff" stroke="#7fb0dd"/></g>
+  <use href="#g-win" x="72" y="1074" width="19" height="19" style="color:#0a6bc2"/>
+  <text x="100" y="1086" font-size="10.6" font-weight="700" fill="#0a3a66">Zero writes to C:\</text>
+  <text x="72" y="1110" font-size="8.7" fill="#5b7186">Enforced by construction, not by policy: the distro's</text>
+  <text x="72" y="1123" font-size="8.7" fill="#5b7186">vhdx is imported onto M:\, so the Docker data-root</text>
+  <text x="72" y="1136" font-size="8.7" fill="#5b7186">cannot drift back to C:\.</text>
+  <text x="72" y="1156" font-size="8.7" fill="#5b7186">uv cache, Python installs, HF cache and TEMP are all</text>
+  <text x="72" y="1169" font-size="8.7" fill="#5b7186">redirected; WSL2's swapfile too.</text>
+  <text x="72" y="1190" font-size="8.4" fill="#8aa0b3">Sole sanctioned exception: <tspan font-family="Consolas,monospace">%USERPROFILE%\.wslconfig</tspan>,</text>
+  <text x="72" y="1202" font-size="8.4" fill="#8aa0b3">~1 KB, a hard WSL2 requirement with no override.</text>
+
+  <g filter="url(#tsh)"><rect x="444" y="1064" width="356" height="152" rx="12" fill="#ffffff" stroke="#7fb0dd"/></g>
+  <use href="#g-chip" x="456" y="1074" width="19" height="19" style="color:#c9760f"/>
+  <text x="484" y="1086" font-size="10.6" font-weight="700" fill="#0a3a66">Exactly one LLM instance</text>
+  <text x="456" y="1110" font-size="8.7" fill="#5b7186">One GPU, one model, one endpoint. Every service in</text>
+  <text x="456" y="1123" font-size="8.7" fill="#5b7186">the stack points at port 8001 or it is out of policy.</text>
+  <text x="456" y="1144" font-size="8.7" fill="#5b7186">Embeddings run on CPU via ONNX rather than being</text>
+  <text x="456" y="1157" font-size="8.7" fill="#5b7186">given a GPU server of their own.</text>
+  <text x="456" y="1178" font-size="8.4" fill="#8aa0b3">Verified as one <tspan font-weight="700">process</tspan>, not one socket &#8212; the port</text>
+  <text x="456" y="1190" font-size="8.4" fill="#8aa0b3">proxy legitimately adds a second listener that loads</text>
+  <text x="456" y="1202" font-size="8.4" fill="#8aa0b3">no model and consumes no VRAM.</text>
+
+  <g filter="url(#tsh)"><rect x="828" y="1064" width="356" height="152" rx="12" fill="#ffffff" stroke="#e0a92e" stroke-width="1.7"/></g>
+  <use href="#g-key" x="840" y="1074" width="19" height="19" style="color:#c9760f"/>
+  <text x="868" y="1086" font-size="10.6" font-weight="700" fill="#8a5310">Auth at the transport edge</text>
+  <text x="840" y="1110" font-size="8.7" fill="#7a5a20">Checked before any MCP handler runs, with</text>
+  <text x="840" y="1123" font-size="8.7" fill="#7a5a20"><tspan font-family="Consolas,monospace">hmac.compare_digest</tspan> so early-mismatch timing</text>
+  <text x="840" y="1136" font-size="8.7" fill="#7a5a20">leaks no key material.</text>
+  <text x="840" y="1157" font-size="8.7" fill="#7a5a20"><tspan font-weight="700">Fails closed:</tspan> with the key unset the server refuses to</text>
+  <text x="840" y="1170" font-size="8.7" fill="#7a5a20">start and exits non-zero.</text>
+  <text x="840" y="1190" font-size="8.4" fill="#a98b4e">Deliberately NOT provided: per-user identity, per-tool</text>
+  <text x="840" y="1202" font-size="8.4" fill="#a98b4e">scoping, rotation, audit trail, TLS, rate limiting.</text>
+
+  <g filter="url(#tsh)"><rect x="1212" y="1064" width="328" height="152" rx="12" fill="#ffffff" stroke="#7cc79b"/></g>
+  <use href="#g-shield" x="1224" y="1074" width="19" height="19" style="color:#2e8f5c"/>
+  <text x="1252" y="1086" font-size="10.6" font-weight="700" fill="#1c6b41">No egress after setup</text>
+  <text x="1224" y="1110" font-size="8.7" fill="#3f6b52">ChromaDB telemetry is disabled and LangSmith</text>
+  <text x="1224" y="1123" font-size="8.7" fill="#3f6b52">tracing is switched off before LangChain is even</text>
+  <text x="1224" y="1136" font-size="8.7" fill="#3f6b52">imported &#8212; both ship on by default.</text>
+  <text x="1224" y="1157" font-size="8.7" fill="#3f6b52">Embedding weights are baked in at build time, not</text>
+  <text x="1224" y="1170" font-size="8.7" fill="#3f6b52">fetched on first query.</text>
+  <text x="1224" y="1190" font-size="8.4" fill="#7d9a89">Lazy initialisation quietly turns a build-time</text>
+  <text x="1224" y="1202" font-size="8.4" fill="#7d9a89">dependency into a runtime one. In an air-gapped</text>
+  <text x="1224" y="1213" font-size="8.4" fill="#7d9a89">design that is a correctness bug, not a slow start.</text>
+
+  <!-- band4 footer strip -->
+  <rect x="60" y="1234" width="1480" height="66" rx="11" fill="#f5f8fb" stroke="#bcd8ef"/>
+  <use href="#g-gauge" x="76" y="1246" width="18" height="18" style="color:#0a6bc2"/>
+  <text x="104" y="1254" font-size="9.6" font-weight="800" fill="#0a3a66">Open discrepancies &#8212; recorded, not quietly patched</text>
+  <text x="104" y="1272" font-size="8.9" fill="#33485c">HLD &#167;2 draws stdio between sibling containers, which is not realisable &#183; HLD &#167;3 calls HTTP a "Phase 5 variant" when it is now the compose default</text>
+  <text x="104" y="1288" font-size="8.9" fill="#33485c">policy &#167;2 budgets rag_server at 500&#8211;700 MB against an actual <tspan font-weight="700">933 MB</tspan> &#8212; the largest single contributor is an <tspan font-weight="700">83 MB Kubernetes client</tspan> that chromadb pulls in for a distributed mode this file-based store never uses</text>
+</svg>
+</div>
 <div class="foot">
-  <code>design/architecture.svg</code> is the authoritative source and the only tracked form of this diagram.
-  The PNG is a build artefact &mdash; regenerate it with <code>bash scripts/render-design.sh</code> from inside the DockerEngine distro; see <a href="README.md">design/README.md</a>.
+  This file is self-contained: the diagram is inline SVG, so it renders with no network access and no sibling files.
+  It is also the <b>source</b> &mdash; edit the SVG here, then run <code>bash scripts/render-design.sh</code> from inside the DockerEngine distro,
+  which extracts the diagram and rasterises it to <code>design/architecture.png</code>. Both extracted artefacts are generated, not tracked; see <a href="README.md">design/README.md</a>.
   Companion documents: <code>HLD.md</code> (architecture baseline), <code>resource-governance.md</code> (enforceable policy), <code>docs/design.md</code> (decision record, including the stdio-versus-HTTP trade-off and the three open discrepancies).
 </div>
 </body>
