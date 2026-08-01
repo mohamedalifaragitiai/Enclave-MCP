@@ -1,7 +1,7 @@
 """
-rag_server - Phase 2 of the Sovereign MCP Platform.
+rag_server - Phases 2 and 5 of the Sovereign MCP Platform.
 
-Exposes the three MCP primitives over stdio:
+Exposes the three MCP primitives:
 
   tool     search_documents(query)  - vector search over the ChromaDB store
   resource chunk://{chunk_id}       - full text of one retrieved chunk
@@ -14,7 +14,15 @@ signature are unchanged, so the agent-facing contract from Phase 1 still holds.
 Chunking, IDs, and store locations live in retrieval.py, shared with
 scripts/ingest.py so the two cannot disagree.
 
-Transport: stdio.
+Transports (Phase 5 adds the second):
+  stdio  - default; no network surface at all, one client per process
+  http   - streamable HTTP on /mcp, gated by an x-api-key header
+
+  python server.py                          # stdio
+  RAG_API_KEY=... python server.py --transport http --port 8765
+
+Both serve the identical server object: transport and authorisation are
+separable from capability. docs/design.md covers the trade-off.
 
 IMPORTANT: on stdio transport, stdout *is* the MCP wire. Never print() to stdout
 from this process - a single stray line corrupts the JSON-RPC stream and the
@@ -22,6 +30,10 @@ client drops the connection. All diagnostics go to stderr via retrieval.log().
 """
 
 from __future__ import annotations
+
+import argparse
+import hmac
+import os
 
 from mcp.server import MCPServer
 
@@ -234,6 +246,92 @@ def rag_answer(question: str) -> str:
     )
 
 
-if __name__ == "__main__":
+# ---------------------------------------------------------------------------
+# Phase 5 - HTTP transport variant with an API-key check.
+#
+# The same server object above is served over either transport; nothing about
+# the tools, resource, or prompt changes. That is the point: transport and
+# authorisation are separable from capability. See docs/design.md for the
+# stdio-vs-HTTP trade-off and HLD.md section 8.
+# ---------------------------------------------------------------------------
+
+API_KEY_ENV = "RAG_API_KEY"
+API_KEY_HEADER = "x-api-key"
+MIN_KEY_LENGTH = 16
+
+
+def _build_http_app(api_key: str, host: str):
+    """Wrap the MCP Starlette app with an API-key gate."""
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.responses import JSONResponse
+
+    class ApiKeyMiddleware(BaseHTTPMiddleware):
+        """Reject any request without a valid API key, before it reaches MCP.
+
+        Deliberately a single shared secret, checked at the transport edge. That
+        is the *seed* of an auth story, not a complete one - there is no per-user
+        identity, no scoping of individual tools, no rotation, and no audit
+        trail. resource-governance.md and HLD.md section 8 both scope RBAC out;
+        this exists to show the pattern is understood, not to claim it is
+        production-grade.
+        """
+
+        async def dispatch(self, request, call_next):
+            provided = request.headers.get(API_KEY_HEADER, "")
+            # Constant-time compare: a plain == leaks key material through
+            # timing differences on early-mismatching bytes.
+            if not hmac.compare_digest(provided, api_key):
+                log(f"401 {request.method} {request.url.path} (bad or missing API key)")
+                return JSONResponse(
+                    {"error": "unauthorized", "detail": f"valid {API_KEY_HEADER} required"},
+                    status_code=401,
+                )
+            return await call_next(request)
+
+    app = server.streamable_http_app(host=host)
+    app.add_middleware(ApiKeyMiddleware)
+    return app
+
+
+def _run_http(host: str, port: int) -> int:
+    import uvicorn
+
+    api_key = os.environ.get(API_KEY_ENV, "")
+    # Fail closed. A server that silently starts unauthenticated because an env
+    # var was forgotten is worse than one that refuses to start.
+    if not api_key:
+        log(f"refusing to start: {API_KEY_ENV} is not set")
+        return 2
+    if len(api_key) < MIN_KEY_LENGTH:
+        log(f"refusing to start: {API_KEY_ENV} shorter than {MIN_KEY_LENGTH} characters")
+        return 2
+
+    log(f"starting on http://{host}:{port}/mcp (API key required)")
+    uvicorn.run(_build_http_app(api_key, host), host=host, port=port, log_level="warning")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="rag_server MCP server.")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "http"],
+        default=os.environ.get("MCP_TRANSPORT", "stdio"),
+        help="stdio (default, air-gapped) or http (streamable HTTP + API key)",
+    )
+    # Default to loopback: binding 0.0.0.0 would expose the corpus to the LAN,
+    # which the air-gap requirement in HLD.md section 7 rules out.
+    parser.add_argument("--host", default=os.environ.get("MCP_HTTP_HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("MCP_HTTP_PORT", "8765")))
+    args = parser.parse_args()
+
+    if args.transport == "http":
+        return _run_http(args.host, args.port)
+
     log(f"starting on stdio; corpus={retrieval.RAW_DOCS_DIR} store={retrieval.CHROMA_DIR}")
     server.run("stdio")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
