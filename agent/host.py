@@ -1,24 +1,34 @@
 """
-agent/host.py - Phase 3 of the Sovereign MCP Platform.
+agent/host.py - Phases 3-4 of the Sovereign MCP Platform.
 
-A LangGraph agent acting as an MCP *host*: it owns the reasoning loop, spawns
-rag_server as an MCP client over stdio, and calls the local Qwen3 llama-server
+A LangGraph agent acting as an MCP *host*: it owns the reasoning loop, connects
+to one or more MCP servers over stdio, and calls the local Qwen3 llama-server
 over an OpenAI-compatible HTTP endpoint for every reasoning step.
 
-It consumes all three MCP primitives the server exposes:
+Servers (Phase 4 adds the second):
+  rag_server  - local process; semantic search over the ingested corpus
+  docs_server - container; PDF/OCR parsing of files not yet ingested
+
+Routing is capability-driven, not hardcoded: the host merges both servers'
+tools/list into one namespace, hands the merged set to the model, and dispatches
+each call back to whichever server advertised it. Adding a third server requires
+no change to the reasoning loop.
+
+It consumes all three MCP primitives:
 
   tools     -> discovered via tools/list, converted to OpenAI function specs and
-               bound to the model, so the *server* decides what the agent can do
+               bound to the model, so the *servers* decide what the agent can do
   prompts   -> rag_answer is fetched via prompts/get and used as the task
                instruction, rather than hardcoding a prompt in this file
-  resources -> the prompt directs the model to read chunk://<id> when a search
-               preview is truncated
+  resources -> chunk:// is host-bridged into a read_chunk tool (resources are
+               host-controlled and not model-addressable)
 
 The graph is written out explicitly rather than using a prebuilt ReAct agent:
 per HLD.md section 6, explicit control over tool routing is the reason LangGraph
 was chosen, and an implicit loop would hide exactly the part worth showing.
 
 Run:  .venv\\Scripts\\python.exe agent\\host.py "your question"
+      .venv\\Scripts\\python.exe agent\\host.py "..." --no-docs   (rag only)
 """
 
 from __future__ import annotations
@@ -27,6 +37,8 @@ import argparse
 import asyncio
 import os
 import sys
+from contextlib import AsyncExitStack
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Any, TypedDict
 
@@ -56,38 +68,14 @@ RAG_SERVER = PROJECT_ROOT / "servers" / "rag_server" / "server.py"
 LLM_ENDPOINT = os.environ.get("LLM_ENDPOINT", "http://localhost:8001/v1")
 LLM_MODEL = os.environ.get("LLM_MODEL", "Qwen3-4B-Instruct-2507")
 
+# docs_server runs in a container because Tesseract cannot be installed on the
+# Windows host without writing to C:\ (resource-governance.md section 1).
+DOCS_IMAGE = os.environ.get("DOCS_IMAGE", "docs_server:0.1.0")
+DOCS_DATA_MOUNT = os.environ.get("DOCS_DATA_MOUNT", "/mnt/m/MCP_Project/data:/app/data")
+
 # A 4B model can loop on tool calls. Bound it rather than trusting it to stop.
-MAX_TOOL_ROUNDS = 4
-
-
-def log(message: str) -> None:
-    """Host diagnostics to stderr; stdout stays clean for the final answer."""
-    print(f"[agent] {message}", file=sys.stderr, flush=True)
-
-
-class AgentState(TypedDict):
-    """Graph state: the running transcript plus a tool-round counter."""
-
-    messages: Annotated[list[AnyMessage], add_messages]
-    rounds: int
-
-
-def mcp_tool_to_openai_spec(tool: Any) -> dict[str, Any]:
-    """Convert an MCP tool declaration into an OpenAI function spec.
-
-    This is the whole MCP-to-LangChain bridge. The server's JSON Schema is
-    passed through untouched, so adding a tool or changing its schema on the
-    server side requires no change here - which is the point of MCP.
-    """
-    return {
-        "type": "function",
-        "function": {
-            "name": tool.name,
-            "description": tool.description or "",
-            "parameters": tool.input_schema,
-        },
-    }
-
+# Multi-server work legitimately needs more rounds (parse, then search).
+MAX_TOOL_ROUNDS = 6
 
 # MCP resources are host-controlled: the model cannot address chunk:// URIs on
 # its own. The server's rag_answer prompt tells it to read them, so the host has
@@ -119,42 +107,125 @@ READ_CHUNK_SPEC: dict[str, Any] = {
 }
 
 
-async def execute_tool_call(session: ClientSession, name: str, args: dict[str, Any]) -> str:
-    """Run one model-requested call against the MCP server, returning its text.
+def log(message: str) -> None:
+    """Host diagnostics to stderr; stdout stays clean for the final answer."""
+    print(f"[agent] {message}", file=sys.stderr, flush=True)
+
+
+class AgentState(TypedDict):
+    """Graph state: the running transcript plus a tool-round counter."""
+
+    messages: Annotated[list[AnyMessage], add_messages]
+    rounds: int
+
+
+@dataclass
+class ServerSpec:
+    """An MCP server the host should connect to."""
+
+    name: str
+    params: StdioServerParameters
+
+
+@dataclass
+class ToolBinding:
+    """Where a model-visible tool actually lives."""
+
+    session: ClientSession
+    server: str
+    remote_name: str  # the name the server knows, before any collision rename
+
+
+def rag_server_spec() -> ServerSpec:
+    return ServerSpec(
+        name="rag_server",
+        params=StdioServerParameters(
+            command=sys.executable,
+            args=[str(RAG_SERVER)],
+            cwd=str(PROJECT_ROOT),
+        ),
+    )
+
+
+def docs_server_spec() -> ServerSpec:
+    """docs_server over stdio into a container.
+
+    'docker run -i' is still plain stdio transport - the container's stdin and
+    stdout are the MCP wire, exactly as for a local subprocess.
+    """
+    return ServerSpec(
+        name="docs_server",
+        params=StdioServerParameters(
+            command="wsl.exe",
+            args=[
+                "-d", "DockerEngine", "--",
+                "docker", "run", "--rm", "-i",
+                "-v", DOCS_DATA_MOUNT,
+                DOCS_IMAGE,
+            ],
+        ),
+    )
+
+
+def mcp_tool_to_openai_spec(tool: Any) -> dict[str, Any]:
+    """Convert an MCP tool declaration into an OpenAI function spec.
+
+    This is the whole MCP-to-LangChain bridge. The server's JSON Schema is
+    passed through untouched, so adding a tool or changing its schema on the
+    server side requires no change here - which is the point of MCP.
+    """
+    return {
+        "type": "function",
+        "function": {
+            "name": tool.name,
+            "description": tool.description or "",
+            "parameters": tool.input_schema,
+        },
+    }
+
+
+async def execute_tool_call(
+    router: dict[str, ToolBinding], name: str, args: dict[str, Any]
+) -> str:
+    """Run one model-requested call against whichever server owns that tool.
 
     Kept at module level rather than nested in the graph so the routing - in
     particular the read_chunk -> resources/read translation - can be exercised
-    directly by scripts/verify_phase3.py without depending on whether the model
+    directly by the verification scripts without depending on whether the model
     happens to choose that tool.
     """
-    if name == READ_CHUNK_TOOL:
+    binding = router.get(name)
+    if binding is None:
+        return f"No such tool: {name!r}. Available: {sorted(router)}"
+
+    if binding.remote_name == READ_CHUNK_TOOL:
         uri = f"chunk://{args['chunk_id']}"
-        log(f"translating to resources/read {uri}")
-        read = await session.read_resource(uri)
-        blocks = [text for text in (getattr(c, "text", None) for c in read.contents) if text]
+        log(f"[{binding.server}] translating to resources/read {uri}")
+        read = await binding.session.read_resource(uri)
+        blocks = [t for t in (getattr(c, "text", None) for c in read.contents) if t]
     else:
-        result = await session.call_tool(name, args)
-        blocks = [text for text in (getattr(b, "text", None) for b in result.content) if text]
+        log(f"[{binding.server}] tools/call {binding.remote_name}({args})")
+        result = await binding.session.call_tool(binding.remote_name, args)
+        blocks = [t for t in (getattr(b, "text", None) for b in result.content) if t]
 
     return "\n\n".join(blocks) or "(tool returned no content)"
 
 
-def build_graph(session: ClientSession, tool_specs: list[dict[str, Any]]):
+def build_graph(router: dict[str, ToolBinding], tool_specs: list[dict[str, Any]]):
     """Compile the two-node reasoning graph: agent <-> tools."""
     llm = ChatOpenAI(
         base_url=LLM_ENDPOINT,
         api_key="not-needed",  # llama-server ignores it; must be non-empty
         model=LLM_MODEL,
         temperature=0,
-        timeout=180,
+        timeout=300,
     )
     llm_with_tools = llm.bind_tools(tool_specs)
 
     async def call_model(state: AgentState) -> dict[str, Any]:
         response = await llm_with_tools.ainvoke(state["messages"])
         if getattr(response, "tool_calls", None):
-            names = [call["name"] for call in response.tool_calls]
-            log(f"model requested tool(s): {names}")
+            log(f"model requested tool(s): {[c['name'] for c in response.tool_calls]}")
         else:
             log("model produced a final answer")
         return {"messages": [response]}
@@ -164,12 +235,11 @@ def build_graph(session: ClientSession, tool_specs: list[dict[str, Any]]):
         outputs: list[ToolMessage] = []
 
         for call in last.tool_calls:
-            log(f"calling MCP tool {call['name']}({call['args']})")
             try:
-                content = await execute_tool_call(session, call["name"], call["args"])
+                content = await execute_tool_call(router, call["name"], call["args"])
             except Exception as exc:
                 # Surface the failure to the model instead of crashing the run;
-                # it can then answer that retrieval failed.
+                # it can then answer that the operation failed.
                 log(f"tool {call['name']} failed: {exc}")
                 content = f"Tool call failed: {exc}"
 
@@ -197,45 +267,125 @@ def build_graph(session: ClientSession, tool_specs: list[dict[str, Any]]):
     return graph.compile()
 
 
-async def run(question: str, show_trace: bool) -> int:
-    params = StdioServerParameters(
-        command=sys.executable,
-        args=[str(RAG_SERVER)],
-        cwd=str(PROJECT_ROOT),
+async def connect_servers(
+    stack: AsyncExitStack, specs: list[ServerSpec]
+) -> tuple[dict[str, ToolBinding], list[dict[str, Any]], list[str], ClientSession | None]:
+    """Open every server and merge their capabilities into one tool namespace.
+
+    Returns the routing table, the merged OpenAI specs, each server's
+    instructions, and the session that owns the rag prompt (if any).
+    """
+    router: dict[str, ToolBinding] = {}
+    tool_specs: list[dict[str, Any]] = []
+    instructions: list[str] = []
+    prompt_session: ClientSession | None = None
+
+    for spec in specs:
+        read_stream, write_stream = await stack.enter_async_context(
+            stdio_client(spec.params)
+        )
+        session = await stack.enter_async_context(
+            ClientSession(read_stream, write_stream)
+        )
+        init = await session.initialize()
+        log(f"connected to {init.server_info.name} v{init.server_info.version}")
+
+        if init.instructions:
+            instructions.append(f"{spec.name}: {init.instructions}")
+
+        for tool in (await session.list_tools()).tools:
+            exposed = tool.name
+            if exposed in router:
+                # Two servers offering the same tool name would be ambiguous.
+                # Namespace the later one rather than silently shadowing it.
+                exposed = f"{spec.name}_{tool.name}"
+                log(f"tool name collision on {tool.name!r}; exposing as {exposed!r}")
+            openai_spec = mcp_tool_to_openai_spec(tool)
+            openai_spec["function"]["name"] = exposed
+            tool_specs.append(openai_spec)
+            router[exposed] = ToolBinding(session, spec.name, tool.name)
+
+        templates = (await session.list_resource_templates()).resource_templates
+        if any(t.uri_template.startswith("chunk://") for t in templates):
+            tool_specs.append(READ_CHUNK_SPEC)
+            router[READ_CHUNK_TOOL] = ToolBinding(session, spec.name, READ_CHUNK_TOOL)
+            log(f"[{spec.name}] bridged chunk:// resource as tool {READ_CHUNK_TOOL}")
+
+        if any(p.name == "rag_answer" for p in (await session.list_prompts()).prompts):
+            prompt_session = session
+
+    log(f"merged tool namespace: {sorted(router)}")
+    return router, tool_specs, instructions, prompt_session
+
+
+def routing_guidance(router: dict[str, ToolBinding]) -> str:
+    """Host-level guidance for choosing between servers.
+
+    A server's prompt only knows about that server. rag_answer tells the model
+    to search and then abstain if nothing relevant comes back - correct advice
+    when rag_server is the only server, actively wrong once docs_server exists,
+    because "not in the index" and "not in the corpus" stop being the same
+    thing. Cross-server orchestration is the host's concern, so the guidance is
+    composed here from the live routing table rather than written into either
+    server's prompt.
+    """
+    by_server: dict[str, list[str]] = {}
+    for exposed, binding in router.items():
+        by_server.setdefault(binding.server, []).append(exposed)
+
+    lines = ["You are connected to more than one MCP server. Route by capability:"]
+    for server, tools in sorted(by_server.items()):
+        lines.append(f"  {server}: {', '.join(sorted(tools))}")
+    lines.append(
+        "\nImportant: search_documents only sees documents that have already "
+        "been ingested into the vector index. If it returns nothing relevant, "
+        "the content may still exist in a file that was never ingested - "
+        "scanned PDFs and images in particular. Before concluding the corpus "
+        "does not cover something, call list_documents, and parse_document on "
+        "any file whose name suggests it is relevant. Only then abstain."
     )
+    return "\n".join(lines)
 
-    async with stdio_client(params) as (read_stream, write_stream):
-        async with ClientSession(read_stream, write_stream) as session:
-            init = await session.initialize()
-            log(f"connected to MCP server {init.server_info.name} v{init.server_info.version}")
 
-            tools = (await session.list_tools()).tools
-            tool_specs = [mcp_tool_to_openai_spec(tool) for tool in tools]
-            log(f"discovered tool(s): {[t.name for t in tools]}")
+async def run(question: str, show_trace: bool, use_docs: bool) -> int:
+    specs = [rag_server_spec()]
+    if use_docs:
+        specs.append(docs_server_spec())
 
-            # Expose the server's chunk:// resource to the model as a tool.
-            templates = (await session.list_resource_templates()).resource_templates
-            if any(t.uri_template.startswith("chunk://") for t in templates):
-                tool_specs.append(READ_CHUNK_SPEC)
-                log(f"bridged resource template chunk:// as tool {READ_CHUNK_TOOL}")
+    async with AsyncExitStack() as stack:
+        router, tool_specs, instructions, prompt_session = await connect_servers(
+            stack, specs
+        )
 
-            # The task instruction comes from the server's prompt template, not
-            # from this file - the server owns how its corpus should be used.
-            prompt = await session.get_prompt("rag_answer", {"question": question})
+        # The task instruction comes from the server's prompt template, not from
+        # this file - the server owns how its corpus should be used.
+        if prompt_session is not None:
+            prompt = await prompt_session.get_prompt("rag_answer", {"question": question})
             instruction = "\n\n".join(
-                text
-                for text in (getattr(m.content, "text", None) for m in prompt.messages)
-                if text
+                t
+                for t in (getattr(m.content, "text", None) for m in prompt.messages)
+                if t
             )
+        else:
+            instruction = question
 
-            messages: list[AnyMessage] = []
-            if init.instructions:
-                messages.append(SystemMessage(content=init.instructions))
-            messages.append(HumanMessage(content=instruction))
+        # Only inject routing guidance when there is actually a choice to make.
+        # It is appended to the *user* message rather than the system message:
+        # rag_answer ends with "if the passages do not contain the answer, say
+        # so plainly", and a 4B model follows that closing numbered instruction
+        # over anything in the system prompt. The guidance has to come after it
+        # to override it.
+        if len(specs) > 1:
+            instruction = f"{instruction}\n\n{routing_guidance(router)}"
 
-            app = build_graph(session, tool_specs)
-            log(f"invoking graph against {LLM_ENDPOINT} ({LLM_MODEL})")
-            final = await app.ainvoke({"messages": messages, "rounds": 0})
+        messages: list[AnyMessage] = []
+        if instructions:
+            messages.append(SystemMessage(content="\n\n".join(instructions)))
+        messages.append(HumanMessage(content=instruction))
+
+        app = build_graph(router, tool_specs)
+        log(f"invoking graph against {LLM_ENDPOINT} ({LLM_MODEL})")
+        final = await app.ainvoke({"messages": messages, "rounds": 0})
 
     if show_trace:
         print("\n" + "=" * 70)
@@ -259,13 +409,18 @@ async def run(question: str, show_trace: bool) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="LangGraph MCP host over rag_server.")
+    parser = argparse.ArgumentParser(description="LangGraph MCP host over local servers.")
     parser.add_argument("question", help="question to answer from the local corpus")
     parser.add_argument(
         "--trace", action="store_true", help="print the full message transcript"
     )
+    parser.add_argument(
+        "--no-docs",
+        action="store_true",
+        help="connect to rag_server only (skips the docs_server container)",
+    )
     args = parser.parse_args()
-    return asyncio.run(run(args.question, args.trace))
+    return asyncio.run(run(args.question, args.trace, use_docs=not args.no_docs))
 
 
 if __name__ == "__main__":

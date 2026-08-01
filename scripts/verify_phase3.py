@@ -1,4 +1,4 @@
-"""Manual acceptance check - Phase 3 LangGraph MCP host.
+﻿"""Manual acceptance check - Phase 3 LangGraph MCP host.
 
 Verifies the host's three responsibilities without depending on what a 4B model
 chooses to do on any given run:
@@ -49,6 +49,15 @@ async def main() -> int:
             _rule("1. tool discovery -> OpenAI function specs")
             tools = (await session.list_tools()).tools
             specs = [host.mcp_tool_to_openai_spec(t) for t in tools]
+
+            # Phase 4 made the host multi-server, so tool execution goes through
+            # a routing table rather than a bare session.
+            router = {
+                t.name: host.ToolBinding(session, "rag_server", t.name) for t in tools
+            }
+            router[host.READ_CHUNK_TOOL] = host.ToolBinding(
+                session, "rag_server", host.READ_CHUNK_TOOL
+            )
             for spec in specs:
                 print(f"{spec['function']['name']}: {spec['function']['parameters']}")
             if not any(s["function"]["name"] == "search_documents" for s in specs):
@@ -63,7 +72,7 @@ async def main() -> int:
 
             # Get a real chunk_id from a search, then force the bridge directly.
             search_text = await host.execute_tool_call(
-                session, "search_documents", {"query": "mechanical integrity"}
+                router, "search_documents", {"query": "mechanical integrity"}
             )
             chunk_id = None
             for token in search_text.replace(")", " ").split():
@@ -74,7 +83,7 @@ async def main() -> int:
 
             if chunk_id:
                 bridged_text = await host.execute_tool_call(
-                    session, host.READ_CHUNK_TOOL, {"chunk_id": chunk_id}
+                    router, host.READ_CHUNK_TOOL, {"chunk_id": chunk_id}
                 )
                 print(f"\n--- read_chunk({chunk_id}) ---\n{bridged_text}")
                 if "source:" not in bridged_text:
@@ -87,7 +96,7 @@ async def main() -> int:
 
             _rule("3. graph run - grounded question")
             specs.append(host.READ_CHUNK_SPEC)
-            app = host.build_graph(session, specs)
+            app = host.build_graph(router, specs)
 
             from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -130,14 +139,25 @@ async def main() -> int:
             )
             answer = str(result["messages"][-1].content)
             print(answer)
-            abstained = any(
-                phrase in answer.lower()
-                for phrase in ("does not contain", "not contain", "no information",
-                               "does not cover", "not covered", "cannot", "unable")
+            # Two-sided check. Matching only on wording is brittle - the model
+            # legitimately varies between "does not contain" and "is not
+            # available in the indexed documents" - so also assert that no
+            # rainfall figure was invented. A fabricated answer is the failure
+            # that actually matters; the exact phrasing of a refusal is not.
+            lowered = answer.lower()
+            negations = (
+                "does not contain", "not contain", "no information", "does not cover",
+                "not covered", "not available", "not found", "not present",
+                "does not appear", "cannot", "unable", "no data",
             )
-            print(f"\nabstained: {abstained}")
+            abstained = any(phrase in lowered for phrase in negations)
+            fabricated = any(unit in lowered for unit in ("mm", "millimet", "inches of rain"))
+
+            print(f"\nabstained: {abstained}   fabricated a figure: {fabricated}")
             if not abstained:
-                failures.append("model did not abstain on an out-of-corpus question")
+                failures.append(f"model did not abstain; answered: {answer[:120]!r}")
+            if fabricated:
+                failures.append("model invented a rainfall figure instead of abstaining")
 
     _rule("RESULT")
     if failures:
@@ -150,3 +170,4 @@ async def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(asyncio.run(main()))
+

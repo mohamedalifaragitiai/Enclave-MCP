@@ -73,6 +73,23 @@ def iter_documents() -> tuple[list[tuple[Path, str]], list[Path]]:
     return docs, skipped
 
 
+def corpus_files() -> list[str]:
+    """Every parseable file in the corpus, text or binary, as relative paths.
+
+    Used to detect files that exist on disk but are absent from the vector
+    index - the index and the corpus are not the same set, and conflating them
+    is how an agent concludes "not in the corpus" when it means "not ingested".
+    """
+    if not RAW_DOCS_DIR.is_dir():
+        return []
+
+    names: list[str] = []
+    for path in sorted(RAW_DOCS_DIR.rglob("*")):
+        if path.is_file() and path.suffix.lower() in (TEXT_SUFFIXES | BINARY_SUFFIXES):
+            names.append(path.relative_to(RAW_DOCS_DIR).as_posix())
+    return names
+
+
 def _split_long(paragraph: str) -> list[str]:
     """Hard-split a paragraph that alone exceeds the chunk size."""
     pieces: list[str] = []

@@ -50,6 +50,39 @@ server = MCPServer(
 )
 
 
+def _unindexed_files(collection) -> list[str]:
+    """Corpus files that exist on disk but have no chunks in the index.
+
+    Scanned PDFs and images can never be indexed by this server - it has no OCR.
+    Staying silent about them makes every miss look like "the corpus does not
+    cover this", when the truthful answer is "this file was never ingested".
+    Reporting them lets the caller route to a parsing server instead of
+    abstaining, without this server needing to know such a server exists.
+    """
+    try:
+        metadatas = collection.get(include=["metadatas"]).get("metadatas") or []
+    except Exception as exc:
+        log(f"could not enumerate indexed sources: {exc}")
+        return []
+
+    indexed = {m.get("source") for m in metadatas if m}
+    return [name for name in retrieval.corpus_files() if name not in indexed]
+
+
+def _unindexed_note(collection) -> str | None:
+    missing = _unindexed_files(collection)
+    if not missing:
+        return None
+    listed = ", ".join(missing[:5])
+    return (
+        f"NOTE: {len(missing)} file(s) in the corpus are NOT in this search "
+        f"index and were not searched: {listed}. This server cannot read them "
+        "(no OCR or PDF parsing). If the answer might be in one of them, use a "
+        "document-parsing tool to extract its text before concluding the corpus "
+        "does not cover the question."
+    )
+
+
 def _collection_or_none():
     """Open the collection, or return None if the corpus was never ingested."""
     try:
@@ -125,14 +158,22 @@ def search_documents(query: str) -> list[str]:
             f"(chunk_id: {chunk_id})\n{preview}"
         )
 
+    note = _unindexed_note(collection)
+
     if not results:
         log(f"all matches below floor {MIN_SIMILARITY} (best {best_rejected:.3f})")
-        return [
-            f"No passage in the corpus is relevant to {query!r} "
+        miss = (
+            f"No indexed passage is relevant to {query!r} "
             f"(best similarity {best_rejected:.3f}, below the {MIN_SIMILARITY} "
-            "relevance floor). Answer that the corpus does not cover this."
+            "relevance floor)."
+        )
+        # Only claim the corpus lacks the answer when the index covers the corpus.
+        return [miss, note] if note else [
+            f"{miss} Answer that the corpus does not cover this."
         ]
 
+    if note:
+        results.append(note)
     return results
 
 

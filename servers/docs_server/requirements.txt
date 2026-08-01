@@ -1,0 +1,14 @@
+# Phase 4 - document parsing / OCR MCP server.
+mcp>=2.0.0
+
+# unstructured base only. The [pdf] extra pulls unstructured-inference, which
+# depends on PyTorch and would push this image to ~4-5 GB against the
+# 1.5-2.5 GB budget in resource-governance.md section 2. The layout-model path
+# it enables (strategy="hi_res") is not needed here: text-native PDFs go through
+# pdfminer and scanned pages go through Tesseract via strategy="ocr_only".
+unstructured>=0.16
+
+pdfminer.six      # text-native PDF extraction
+pdf2image         # rasterises PDF pages for OCR (needs poppler-utils)
+pytesseract       # Tesseract binding (needs the tesseract-ocr binary)
+pillow            # image loading for the OCR path
