@@ -121,10 +121,21 @@ class AgentState(TypedDict):
 
 @dataclass
 class ServerSpec:
-    """An MCP server the host should connect to."""
+    """An MCP server the host should connect to, over either transport.
+
+    Exactly one of params (stdio) or url (HTTP) is set. The reasoning loop never
+    looks at this - only connect_servers does - so the agent behaves identically
+    whether a server is a local subprocess or a container across the network.
+    """
 
     name: str
-    params: StdioServerParameters
+    params: StdioServerParameters | None = None
+    url: str | None = None
+    api_key: str | None = None
+
+    @property
+    def transport(self) -> str:
+        return "stdio" if self.params is not None else "http"
 
 
 @dataclass
@@ -137,6 +148,14 @@ class ToolBinding:
 
 
 def rag_server_spec() -> ServerSpec:
+    """rag_server over HTTP if RAG_SERVER_URL is set, else as a local subprocess.
+
+    Compose sets the URL; a bare checkout does not, so the same entry point works
+    containerised and on the host.
+    """
+    url = os.environ.get("RAG_SERVER_URL")
+    if url:
+        return ServerSpec(name="rag_server", url=url, api_key=os.environ.get("RAG_API_KEY"))
     return ServerSpec(
         name="rag_server",
         params=StdioServerParameters(
@@ -148,11 +167,17 @@ def rag_server_spec() -> ServerSpec:
 
 
 def docs_server_spec() -> ServerSpec:
-    """docs_server over stdio into a container.
+    """docs_server over HTTP if DOCS_SERVER_URL is set, else stdio into a container.
 
-    'docker run -i' is still plain stdio transport - the container's stdin and
-    stdout are the MCP wire, exactly as for a local subprocess.
+    The stdio form ('docker run -i') is still plain stdio transport - the
+    container's stdin and stdout are the MCP wire, exactly as for a local
+    subprocess. It only works because the *host* is outside the container and
+    owns that process; under compose, where the agent is itself a container,
+    stdio cannot reach a sibling service and HTTP is required.
     """
+    url = os.environ.get("DOCS_SERVER_URL")
+    if url:
+        return ServerSpec(name="docs_server", url=url, api_key=os.environ.get("DOCS_API_KEY"))
     return ServerSpec(
         name="docs_server",
         params=StdioServerParameters(
@@ -281,14 +306,30 @@ async def connect_servers(
     prompt_session: ClientSession | None = None
 
     for spec in specs:
-        read_stream, write_stream = await stack.enter_async_context(
-            stdio_client(spec.params)
-        )
+        if spec.transport == "stdio":
+            read_stream, write_stream = await stack.enter_async_context(
+                stdio_client(spec.params)
+            )
+        else:
+            import httpx2
+
+            from mcp.client.streamable_http import streamable_http_client
+
+            headers = {"x-api-key": spec.api_key} if spec.api_key else {}
+            client = await stack.enter_async_context(httpx2.AsyncClient(headers=headers))
+            streams = await stack.enter_async_context(
+                streamable_http_client(spec.url, http_client=client)
+            )
+            read_stream, write_stream = streams[0], streams[1]
+
         session = await stack.enter_async_context(
             ClientSession(read_stream, write_stream)
         )
         init = await session.initialize()
-        log(f"connected to {init.server_info.name} v{init.server_info.version}")
+        log(
+            f"connected to {init.server_info.name} v{init.server_info.version} "
+            f"({spec.transport})"
+        )
 
         if init.instructions:
             instructions.append(f"{spec.name}: {init.instructions}")

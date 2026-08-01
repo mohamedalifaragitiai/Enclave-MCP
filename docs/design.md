@@ -174,3 +174,118 @@ Practical note: the guidance is appended to the *user* message rather than the
 system message. A 4B model follows the closing numbered instruction of a task
 prompt over anything in the system prompt, so guidance placed in the system
 message was ignored.
+
+---
+
+## 6. Containerisation: stdio does not survive a container boundary
+
+This is the single most consequential finding of Phase 6, and it contradicts the
+architecture diagram in HLD §2.
+
+stdio works because a **parent process owns a child's stdin and stdout**. Two
+separate containers do not share a process tree, so there is nothing for stdio
+to attach to. The HLD diagram shows three sibling containers with `stdio (MCP)`
+arrows between them; that topology is not realisable as drawn.
+
+Three options existed:
+
+| Option | Verdict |
+|---|---|
+| Servers become HTTP services on the compose network | Chosen. The standard remote-MCP topology, and what compose is for |
+| Agent mounts `/var/run/docker.sock` and spawns `docker run -i` per server | Rejected. Access to the Docker socket is equivalent to root on the host; shipping that in a project with a security phase would be indefensible |
+| One container running agent and both servers over stdio | Rejected. Does not wire three services, and forces Tesseract into the agent image |
+
+So Phase 5's HTTP transport turned out not to be an optional demonstration after
+all — it is a **prerequisite for containerisation**. `docs_server` gained the
+same transport switch in Phase 6 for exactly this reason.
+
+The agent still supports both. `RAG_SERVER_URL` / `DOCS_SERVER_URL` being set is
+what switches it from spawning subprocesses to HTTP; unset, a bare checkout runs
+identically to Phase 4. The reasoning loop never learns which transport is in
+use — only `connect_servers` does.
+
+### Reaching the LLM from a container
+
+`extra_hosts` maps `host.docker.internal` to the **`vEthernet (WSL)` address**,
+not to `host-gateway`. This is not interchangeable: `host-gateway` resolves to
+the Docker bridge gateway, which is the DockerEngine distro itself, not Windows.
+The LLM listens on the Windows side, so `host-gateway` would resolve and then
+silently fail to connect. The address is parameterised as `WSL_HOST_IP` because
+it can change across reboots.
+
+### What compose enforces
+
+- **Bind mounts only**, no top-level `volumes:` block, so all state is visible
+  under `./data` (HLD §5). Verified: `docker volume ls` is empty.
+- **No published ports.** Both servers are reachable only on the compose
+  network. `docker compose ps` lists `8765/tcp` for rag_server because the
+  Dockerfile `EXPOSE`s it — that is documentation, not a host mapping.
+- **Keys are required, not defaulted.** `${RAG_API_KEY:?...}` fails the whole
+  `compose up` if unset, rather than starting an unauthenticated server.
+- **Auth verified from inside the network**, not just from outside: a keyless
+  POST to rag_server on the compose network returns 401.
+
+---
+
+## 7. Cold start was an air-gap violation, not just a slow first request
+
+The first containerised run failed with `SSE stream ended without a response` on
+`search_documents`. The cause was worse than a timeout: the container was
+downloading the ONNX embedding weights **from huggingface.co while serving the
+request**. That is runtime network egress, which HLD §7 forbids outright, and it
+was slow enough that the client gave up mid-call.
+
+Both halves are fixed:
+
+- the weights are baked into the image at build time (+68 MB), so the running
+  container never reaches the network;
+- the model is loaded at start-up before the listener opens, so the first
+  request does not pay for it. Only in HTTP mode — under stdio the process is
+  spawned per session, so warming there would tax every run for no benefit.
+
+Verified after the fix: zero requests to huggingface.co in the running
+container's logs.
+
+The general lesson is worth stating: **lazy initialisation quietly converts a
+build-time dependency into a runtime one.** In an air-gapped design that is not
+a performance detail, it is a correctness violation.
+
+---
+
+## 8. Reconciliation with HLD.md
+
+Phase 6 requires this document to be finalised against the HLD. Three
+discrepancies remain open; none is silently patched here, since `HLD.md` is the
+design baseline and `resource-governance.md` §5 requires changes to be
+deliberate.
+
+| # | HLD says | Reality after Phase 6 |
+|---|---|---|
+| 1 | §2 diagram: `agent --stdio--> rag_server` and `--stdio--> docs_server` between sibling containers | Not realisable (§6 above). Under compose both edges are HTTP. The diagram needs redrawing, or a note that stdio applies only to the non-containerised topology |
+| 2 | §3 table: `rag_server` transport is "stdio (Phase 1-4), SSE+API-key (Phase 5 variant)" | Accurate, but understates it: HTTP is now the *default* under compose, not a variant |
+| 3 | resource-governance §2: `rag_server` image 500-700 MB | **Actual: 933 MB.** See below |
+
+### The image-size overrun
+
+`rag_server` exceeds its documented budget by ~33%. The drivers are measured,
+not guessed:
+
+| Component | Size |
+|---|---|
+| `pip install` layer (chromadb + fastembed + onnxruntime tree) | 492 MB |
+| Python 3.12-slim base | ~46 MB |
+| Baked embedding weights | 68 MB |
+
+Within site-packages the largest single entry is the **Kubernetes client at
+83 MB**, pulled in by chromadb for its distributed deployment mode and entirely
+unused by a file-based, single-laptop store. `grpc` (18 MB) arrives the same
+way. Removing them plausibly recovers ~100 MB, which would still leave the image
+around 850 MB — over budget.
+
+The other two images are within budget: `docs_server` 1.23 GB (against
+1.5-2.5 GB) and `agent` 355 MB (against 400-600 MB), so the **total** stack is
+comfortably inside the steady-state envelope in §2. The overrun is specific to
+one line item whose estimate predates knowing chromadb's dependency tree.
+
+This is flagged rather than fixed or amended away, because §5 makes budget
+changes a deliberate edit, not a side effect of a Dockerfile.

@@ -18,7 +18,19 @@ import re
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+def _project_root() -> Path:
+    """Repo root when run from a checkout, the app directory inside an image.
+
+    In a checkout this file is servers/rag_server/retrieval.py, so the root is
+    two levels up. The container flattens everything into /app, where parents[2]
+    does not exist - guard rather than assume, since this default is evaluated
+    at import time even when the env vars below override it.
+    """
+    here = Path(__file__).resolve()
+    return here.parents[2] if len(here.parents) >= 3 else here.parent
+
+
+PROJECT_ROOT = _project_root()
 
 # Containers bind-mount ./data at /app/data, so both are overridable by env.
 RAW_DOCS_DIR = Path(os.environ.get("RAW_DOCS_DIR", PROJECT_ROOT / "data" / "raw_docs"))

@@ -306,6 +306,15 @@ def _run_http(host: str, port: int) -> int:
         log(f"refusing to start: {API_KEY_ENV} shorter than {MIN_KEY_LENGTH} characters")
         return 2
 
+    # Load the embedding model before accepting connections. Lazily loading it
+    # on the first query made that query pay several seconds of start-up and it
+    # timed out client-side ("SSE stream ended without a response") while the
+    # model was still loading. Under stdio the process is spawned per session,
+    # so warming there would tax every run for no benefit; over HTTP the process
+    # is long-lived and the cost is paid exactly once.
+    log("warming embedding model before serving")
+    retrieval.get_embedder()
+
     log(f"starting on http://{host}:{port}/mcp (API key required)")
     uvicorn.run(_build_http_app(api_key, host), host=host, port=port, log_level="warning")
     return 0

@@ -22,3 +22,6 @@ data/chroma_db/
 
 # Local environment overrides
 .env
+
+# Embedding model cache downloaded by the containerised rag_server
+data/.fastembed/

@@ -24,6 +24,8 @@ stderr via _log().
 
 from __future__ import annotations
 
+import argparse
+import hmac
 import os
 import re
 import sys
@@ -246,6 +248,89 @@ def chunk_document(filename: str) -> list[str]:
     return chunks or [f"No text to chunk in {filename!r}."]
 
 
-if __name__ == "__main__":
+# ---------------------------------------------------------------------------
+# Phase 6 - HTTP transport, mirroring the pattern established for rag_server in
+# Phase 5.
+#
+# This is needed because stdio cannot cross a container boundary: it works by a
+# parent process owning a child's stdin/stdout, which two separate containers do
+# not share. Once each server is its own compose service, MCP has to travel over
+# the network. See docs/design.md section 6.
+#
+# The ~40 lines below are duplicated from rag_server rather than shared. Each
+# server is an independently deployable image with its own requirements.txt and
+# no common package; introducing a shared library would mean a build-context
+# parent directory and coupled release cycles for the sake of one middleware
+# class. The duplication is the cheaper trade here.
+# ---------------------------------------------------------------------------
+
+API_KEY_ENV = "DOCS_API_KEY"
+API_KEY_HEADER = "x-api-key"
+MIN_KEY_LENGTH = 16
+
+
+def _build_http_app(api_key: str, host: str):
+    """Wrap the MCP Starlette app with an API-key gate."""
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.responses import JSONResponse
+
+    class ApiKeyMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            provided = request.headers.get(API_KEY_HEADER, "")
+            # Constant-time compare: a plain == leaks key material through
+            # timing differences on early-mismatching bytes.
+            if not hmac.compare_digest(provided, api_key):
+                _log(f"401 {request.method} {request.url.path} (bad or missing API key)")
+                return JSONResponse(
+                    {"error": "unauthorized", "detail": f"valid {API_KEY_HEADER} required"},
+                    status_code=401,
+                )
+            return await call_next(request)
+
+    app = server.streamable_http_app(host=host)
+    app.add_middleware(ApiKeyMiddleware)
+    return app
+
+
+def _run_http(host: str, port: int) -> int:
+    import uvicorn
+
+    api_key = os.environ.get(API_KEY_ENV, "")
+    # Fail closed rather than starting unauthenticated on a forgotten env var.
+    if not api_key:
+        _log(f"refusing to start: {API_KEY_ENV} is not set")
+        return 2
+    if len(api_key) < MIN_KEY_LENGTH:
+        _log(f"refusing to start: {API_KEY_ENV} shorter than {MIN_KEY_LENGTH} characters")
+        return 2
+
+    _log(f"starting on http://{host}:{port}/mcp (API key required)")
+    uvicorn.run(_build_http_app(api_key, host), host=host, port=port, log_level="warning")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="docs_server MCP server.")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "http"],
+        default=os.environ.get("MCP_TRANSPORT", "stdio"),
+        help="stdio (default) or http (streamable HTTP + API key)",
+    )
+    # 0.0.0.0 is the correct default *inside a container*: the only routes in are
+    # the compose network and explicitly published ports, and nothing is
+    # published for this service. On a host this would be wrong.
+    parser.add_argument("--host", default=os.environ.get("MCP_HTTP_HOST", "0.0.0.0"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("MCP_HTTP_PORT", "8766")))
+    args = parser.parse_args()
+
+    if args.transport == "http":
+        return _run_http(args.host, args.port)
+
     _log(f"starting on stdio; corpus={DOCS_DIR}")
     server.run("stdio")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

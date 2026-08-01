@@ -1,0 +1,87 @@
+# Sovereign MCP Platform - full stack (Phase 6).
+#
+# Run from /mnt/m/MCP_Project inside the DockerEngine distro, never from a
+# Docker Desktop context (SKILL.md). Every image layer, container and build
+# cache entry then lives in that distro's vhdx on M:\ by construction.
+#
+#   wsl -d DockerEngine
+#   cd /mnt/m/MCP_Project
+#   docker compose build
+#   docker compose up -d rag_server docs_server
+#   docker compose run --rm agent "What does OSHA require for mechanical integrity?"
+#
+# Bind mounts only - no top-level `volumes:` block - so nothing lands in
+# Docker's internal volume store and every byte of state is visible under
+# ./data (HLD.md section 5, resource-governance.md section 1).
+
+services:
+  rag_server:
+    build: ./servers/rag_server
+    image: rag_server:0.2.0
+    volumes:
+      - ./data:/app/data
+    environment:
+      # Fail fast at `compose up` rather than at runtime if the key is missing.
+      RAG_API_KEY: ${RAG_API_KEY:?RAG_API_KEY must be set - copy .env.example to .env}
+      LLM_ENDPOINT: http://host.docker.internal:8001/v1
+    extra_hosts:
+      # NOT "host-gateway": that resolves to the Docker bridge gateway, i.e. the
+      # DockerEngine distro itself, not Windows. The LLM listens on the Windows
+      # side, reachable at the vEthernet (WSL) address via the port proxy set up
+      # by scripts/setup-llm-proxy.ps1. Override WSL_HOST_IP if that IP changes.
+      - "host.docker.internal:${WSL_HOST_IP:-172.28.64.1}"
+    # Deliberately no `ports:` - these servers are reachable only from the
+    # compose network. Publishing them would put the corpus on the host network
+    # for no benefit (HLD.md section 7).
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8765), 2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  docs_server:
+    build: ./servers/docs_server
+    image: docs_server:0.1.0
+    volumes:
+      - ./data:/app/data
+    environment:
+      DOCS_API_KEY: ${DOCS_API_KEY:?DOCS_API_KEY must be set - copy .env.example to .env}
+      MCP_TRANSPORT: http
+      MCP_HTTP_HOST: 0.0.0.0
+      MCP_HTTP_PORT: "8766"
+      DOCS_DIR: /app/data/raw_docs
+    extra_hosts:
+      - "host.docker.internal:${WSL_HOST_IP:-172.28.64.1}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8766), 2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  agent:
+    build: ./agent
+    image: agent:0.3.0
+    depends_on:
+      rag_server:
+        condition: service_healthy
+      docs_server:
+        condition: service_healthy
+    environment:
+      # The single permitted inference endpoint (resource-governance.md
+      # section 3). Nothing in this stack may point anywhere else.
+      LLM_ENDPOINT: http://host.docker.internal:8001/v1
+      LLM_MODEL: ${LLM_MODEL:-Qwen3-4B-Instruct-2507}
+      # Presence of these URLs is what switches the host from spawning servers
+      # as subprocesses to reaching them over HTTP.
+      RAG_SERVER_URL: http://rag_server:8765/mcp
+      DOCS_SERVER_URL: http://docs_server:8766/mcp
+      RAG_API_KEY: ${RAG_API_KEY:?RAG_API_KEY must be set}
+      DOCS_API_KEY: ${DOCS_API_KEY:?DOCS_API_KEY must be set}
+    extra_hosts:
+      - "host.docker.internal:${WSL_HOST_IP:-172.28.64.1}"
+    # One-shot: answers a question and exits. Not restarted.
+    restart: "no"
