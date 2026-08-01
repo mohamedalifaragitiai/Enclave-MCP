@@ -1,174 +1,198 @@
 """
-rag_server - Phase 1 of the Sovereign MCP Platform.
+rag_server - Phase 2 of the Sovereign MCP Platform.
 
-Exposes one MCP tool, `search_documents`, doing naive keyword search over
-data/raw_docs/. Phase 2 swaps the scoring below for ChromaDB + bge-small-en-v1.5
-vector retrieval; the tool name and signature are deliberately kept stable so
-the agent-facing contract does not change when that lands (see HLD.md section 9).
+Exposes the three MCP primitives over stdio:
+
+  tool     search_documents(query)  - vector search over the ChromaDB store
+  resource chunk://{chunk_id}       - full text of one retrieved chunk
+  prompt   rag_answer(question)     - grounded-answer template for the host
+
+Phase 1's naive keyword scoring has been replaced by dense retrieval
+(BAAI/bge-small-en-v1.5 via fastembed + ChromaDB), but the tool name and
+signature are unchanged, so the agent-facing contract from Phase 1 still holds.
+
+Chunking, IDs, and store locations live in retrieval.py, shared with
+scripts/ingest.py so the two cannot disagree.
 
 Transport: stdio.
 
 IMPORTANT: on stdio transport, stdout *is* the MCP wire. Never print() to stdout
 from this process - a single stray line corrupts the JSON-RPC stream and the
-client drops the connection. All diagnostics go to stderr via _log().
+client drops the connection. All diagnostics go to stderr via retrieval.log().
 """
 
 from __future__ import annotations
 
-import os
-import re
-import sys
-from pathlib import Path
-
 from mcp.server import MCPServer
 
-# --- configuration ---------------------------------------------------------
+import retrieval
+from retrieval import log
 
-# Containers bind-mount the project's ./data at /app/data (HLD.md section 5).
-# Locally we resolve relative to this file, so the server behaves identically
-# whether it is run from the venv or from inside the image.
-_DEFAULT_RAW_DOCS = Path(__file__).resolve().parents[2] / "data" / "raw_docs"
-RAW_DOCS_DIR = Path(os.environ.get("RAW_DOCS_DIR", _DEFAULT_RAW_DOCS))
+TOP_K = 5
+PREVIEW_CHARS = 400
 
-# Phase 1 is plain keyword matching, so only text-native files are searchable.
-TEXT_SUFFIXES = {".txt", ".md", ".markdown", ".rst", ".log", ".csv", ".json"}
-# These need docs_server (unstructured + pytesseract), which arrives in Phase 4.
-BINARY_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff"}
-
-MAX_RESULTS = 5
-SNIPPET_CHARS = 300
+# Dense retrieval always returns the nearest neighbours, however far away they
+# are - an off-topic query still yields its "best" match. Without a floor the
+# model receives irrelevant context and is invited to hallucinate from it.
+# 0.50 cleanly separates genuine paraphrase matches (~0.60-0.80 observed) from
+# unrelated queries (~0.48) on the current corpus, but it is calibrated against
+# a handful of fixtures - retune it once the real PDF corpus is ingested.
+MIN_SIMILARITY = 0.50
 
 server = MCPServer(
     name="rag_server",
-    version="0.1.0",
+    version="0.2.0",
     instructions=(
-        "Keyword search over the local raw-document corpus. "
-        "Phase 1: exact term matching only, no semantic similarity."
+        "Semantic search over the local document corpus. Call search_documents "
+        "to find relevant passages, then read the chunk://<id> resource for any "
+        "result whose full text you need. Answer only from retrieved content."
     ),
 )
 
 
-def _log(message: str) -> None:
-    """Diagnostics to stderr only - stdout belongs to the MCP protocol."""
-    print(f"[rag_server] {message}", file=sys.stderr, flush=True)
-
-
-def _load_documents() -> tuple[list[tuple[Path, str]], list[Path]]:
-    """Return (readable text documents, files skipped as non-text)."""
-    docs: list[tuple[Path, str]] = []
-    skipped: list[Path] = []
-
-    for path in sorted(RAW_DOCS_DIR.rglob("*")):
-        if not path.is_file():
-            continue
-        suffix = path.suffix.lower()
-        if suffix in BINARY_SUFFIXES:
-            skipped.append(path)
-            continue
-        if suffix not in TEXT_SUFFIXES:
-            continue
-        try:
-            docs.append((path, path.read_text(encoding="utf-8", errors="replace")))
-        except OSError as exc:  # unreadable file should not kill the whole search
-            _log(f"skipping unreadable file {path}: {exc}")
-
-    return docs, skipped
-
-
-def _snippet(text: str, position: int) -> str:
-    """A single-line excerpt of text centred on position."""
-    half = SNIPPET_CHARS // 2
-    start = max(0, position - half)
-    end = min(len(text), position + half)
-    excerpt = " ".join(text[start:end].split())
-    prefix = "..." if start > 0 else ""
-    suffix = "..." if end < len(text) else ""
-    return f"{prefix}{excerpt}{suffix}"
+def _collection_or_none():
+    """Open the collection, or return None if the corpus was never ingested."""
+    try:
+        return retrieval.get_collection()
+    except Exception as exc:  # chromadb raises different types across versions
+        log(f"collection unavailable: {exc}")
+        return None
 
 
 @server.tool(
     name="search_documents",
     description=(
-        "Keyword-search the local document corpus in data/raw_docs. "
-        "Returns up to 5 matching excerpts, best match first. "
-        "Matching is literal whole-word matching, not semantic - a query that "
-        "shares no words with the corpus will return no results."
+        "Semantic search over the local document corpus. Returns up to 5 "
+        "passages ranked by embedding similarity, each tagged with a chunk_id "
+        "that can be read in full via the chunk://<chunk_id> resource. Unlike "
+        "keyword search this matches on meaning, so paraphrased queries work."
     ),
 )
 def search_documents(query: str) -> list[str]:
-    """Naive keyword search over data/raw_docs.
+    """Vector search over the ingested corpus.
 
     Args:
-        query: Free-text query. Split into whole words; documents are ranked by
-            how many distinct query terms they contain, then by total hit count.
+        query: Free-text question or topic. Embedded with the same model used
+            at ingest time, then matched by cosine similarity.
 
     Returns:
-        Up to MAX_RESULTS formatted excerpts. If nothing matches, a single
-        explanatory string rather than an empty list, so the calling model gets
-        a usable signal instead of silence.
+        Up to TOP_K formatted passages, closest match first. On an empty or
+        missing index a single explanatory string is returned rather than an
+        empty list, so the calling model gets a usable signal instead of
+        silence.
     """
-    if not RAW_DOCS_DIR.is_dir():
-        _log(f"corpus directory not found: {RAW_DOCS_DIR}")
-        return [f"No document corpus found at {RAW_DOCS_DIR}."]
+    if not query or not query.strip():
+        return ["Empty query - provide a question or topic to search for."]
 
-    terms = re.findall(r"\w+", query.lower())
-    if not terms:
-        return ["Empty query - provide at least one search word."]
+    collection = _collection_or_none()
+    if collection is None:
+        return [
+            "The vector store has not been built yet. Run scripts/ingest.py to "
+            "chunk and embed data/raw_docs into data/chroma_db."
+        ]
 
-    documents, skipped = _load_documents()
-    _log(f"query={query!r} terms={terms} docs={len(documents)} skipped={len(skipped)}")
+    count = collection.count()
+    if count == 0:
+        return ["The vector store is empty. Run scripts/ingest.py to populate it."]
 
-    if not documents:
-        note = f"No searchable text documents in {RAW_DOCS_DIR}."
-        if skipped:
-            note += (
-                f" {len(skipped)} non-text file(s) were ignored - PDF/image"
-                " extraction arrives with docs_server in Phase 4."
-            )
-        return [note]
+    query_embedding = retrieval.embed([query])[0]
+    response = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=min(TOP_K, count),
+        include=["documents", "metadatas", "distances"],
+    )
 
-    scored: list[tuple[int, int, Path, str]] = []
-    for path, text in documents:
-        lowered = text.lower()
-        hits = 0
-        matched_terms = 0
-        first_position: int | None = None
+    ids = response["ids"][0]
+    documents = response["documents"][0]
+    metadatas = response["metadatas"][0]
+    distances = response["distances"][0]
 
-        for term in set(terms):
-            positions = [m.start() for m in re.finditer(rf"\b{re.escape(term)}\b", lowered)]
-            if positions:
-                matched_terms += 1
-                hits += len(positions)
-                if first_position is None or positions[0] < first_position:
-                    first_position = positions[0]
-
-        if matched_terms:
-            scored.append((matched_terms, hits, path, _snippet(text, first_position or 0)))
-
-    if not scored:
-        note = f"No matches for {query!r} across {len(documents)} document(s)."
-        if skipped:
-            note += (
-                f" Note: {len(skipped)} non-text file(s) were not searched"
-                " (PDF/image extraction arrives in Phase 4)."
-            )
-        return [note]
-
-    # Rank by distinct terms matched first, then raw hit count, then name for
-    # a stable ordering across runs.
-    scored.sort(key=lambda row: (-row[0], -row[1], row[2].name))
+    log(f"query={query!r} matched {len(ids)} of {count} chunk(s)")
 
     results: list[str] = []
-    for matched_terms, hits, path, excerpt in scored[:MAX_RESULTS]:
-        relative = path.relative_to(RAW_DOCS_DIR)
+    best_rejected = 0.0
+    for chunk_id, document, metadata, distance in zip(ids, documents, metadatas, distances):
+        # Chroma returns cosine *distance*; similarity reads better in context.
+        similarity = 1.0 - float(distance)
+        if similarity < MIN_SIMILARITY:
+            best_rejected = max(best_rejected, similarity)
+            continue
+        preview = " ".join(document.split())
+        if len(preview) > PREVIEW_CHARS:
+            preview = preview[:PREVIEW_CHARS] + "..."
         results.append(
-            f"{relative} [{matched_terms}/{len(set(terms))} terms, {hits} hits]\n{excerpt}"
+            f"[similarity {similarity:.3f}] {metadata.get('source', '?')} "
+            f"(chunk_id: {chunk_id})\n{preview}"
         )
 
-    _log(f"returning {len(results)} of {len(scored)} matching document(s)")
+    if not results:
+        log(f"all matches below floor {MIN_SIMILARITY} (best {best_rejected:.3f})")
+        return [
+            f"No passage in the corpus is relevant to {query!r} "
+            f"(best similarity {best_rejected:.3f}, below the {MIN_SIMILARITY} "
+            "relevance floor). Answer that the corpus does not cover this."
+        ]
+
     return results
 
 
+@server.resource(
+    "chunk://{chunk_id}",
+    name="corpus_chunk",
+    description=(
+        "Full untruncated text of a single ingested chunk, addressed by the "
+        "chunk_id returned from search_documents."
+    ),
+    mime_type="text/plain",
+)
+def read_chunk(chunk_id: str) -> str:
+    """Return one chunk verbatim, so the host can expand a search preview."""
+    collection = _collection_or_none()
+    if collection is None:
+        return "The vector store has not been built yet. Run scripts/ingest.py."
+
+    result = collection.get(ids=[chunk_id], include=["documents", "metadatas"])
+    documents = result.get("documents") or []
+    if not documents:
+        log(f"chunk not found: {chunk_id}")
+        return f"No chunk with id {chunk_id!r}."
+
+    metadata = (result.get("metadatas") or [{}])[0] or {}
+    source = metadata.get("source", "unknown")
+    index = metadata.get("chunk_index", "?")
+    log(f"served chunk {chunk_id}")
+    return f"source: {source}\nchunk_index: {index}\n\n{documents[0]}"
+
+
+@server.prompt(
+    name="rag_answer",
+    description=(
+        "Template instructing the model to answer a question strictly from "
+        "passages retrieved via search_documents, and to say so when the "
+        "corpus does not support an answer."
+    ),
+)
+def rag_answer(question: str) -> str:
+    """Grounded-answer prompt.
+
+    Kept deliberately strict about abstaining: with a 4B model and a small
+    corpus, an ungrounded confident answer is the most likely failure mode
+    (HLD.md section 8).
+    """
+    return (
+        "You are answering from a local document corpus.\n\n"
+        f"Question: {question}\n\n"
+        "Instructions:\n"
+        "1. Call search_documents with a focused query drawn from the question.\n"
+        "2. If a result looks relevant but is truncated, read its "
+        "chunk://<chunk_id> resource for the full text.\n"
+        "3. Answer using only the retrieved passages. Cite the source filename "
+        "for each claim.\n"
+        "4. If the passages do not contain the answer, say so plainly instead "
+        "of guessing. Do not use outside knowledge."
+    )
+
+
 if __name__ == "__main__":
-    _log(f"starting on stdio; corpus={RAW_DOCS_DIR}")
+    log(f"starting on stdio; corpus={retrieval.RAW_DOCS_DIR} store={retrieval.CHROMA_DIR}")
     server.run("stdio")

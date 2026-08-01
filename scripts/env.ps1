@@ -10,6 +10,10 @@ $env:UV_PYTHON_INSTALL_DIR = "$ProjectRoot\.cache\uv-python"
 # Without this, `uv python install` drops a shim in C:\Users\<you>\.local\bin
 $env:UV_PYTHON_BIN_DIR     = "$ProjectRoot\.tools\bin"
 $env:HF_HOME               = "$ProjectRoot\.cache\huggingface"
+# fastembed downloads ONNX weights to its own cache, not HF_HOME
+$env:FASTEMBED_CACHE_PATH  = "$ProjectRoot\.cache\fastembed"
+# ChromaDB phones home by default - HLD.md section 7 requires zero network egress
+$env:ANONYMIZED_TELEMETRY  = "False"
 $env:PIP_CACHE_DIR         = "$ProjectRoot\.cache\pip"
 
 # Temp redirected too - pip/uv unpack wheels here and would otherwise hit C:\

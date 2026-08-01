@@ -1,3 +1,10 @@
-# Phase 1 - MCP server, naive keyword search only.
-# ChromaDB + sentence-transformers arrive in Phase 2.
-mcp>=1.2.0
+# Phase 2 - vector retrieval over a local ChromaDB store.
+mcp>=2.0.0
+
+# File-based vector store (HLD.md section 6).
+chromadb>=1.0
+
+# bge-small-en-v1.5 embeddings via ONNX Runtime rather than sentence-transformers:
+# the latter pulls PyTorch (~2.5 GB), which would breach the 500-700 MB
+# rag_server image budget in resource-governance.md section 2.
+fastembed>=0.4
