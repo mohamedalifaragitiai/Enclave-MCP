@@ -82,8 +82,24 @@ below 10 GB at any phase boundary, run the cleanup routine (§4) before proceedi
 
 **Verification:**
 ```powershell
-netstat -ano | findstr :8001    # confirm exactly one listener
+Get-Process llama-server        # confirm exactly one LLM process
+netstat -ano | findstr :8001    # see note below before judging this output
 ```
+
+**Note on the listener count.** Since the WSL port proxy was added (see
+`scripts/setup-llm-proxy.ps1`), **two** listeners on 8001 are expected and
+correct:
+
+| Listener | Owner | What it is |
+|---|---|---|
+| `127.0.0.1:8001` | `llama-server` | the one and only model process |
+| `<vEthernet (WSL) address>:8001` | `svchost` (IP Helper) | port proxy forwarding to the line above |
+
+The proxy is a forwarder, not an inference endpoint — it loads no model and
+consumes no VRAM. The rule in this section is one LLM **process**, so verify
+with `Get-Process llama-server`; a raw socket count will read as two and must
+not be treated as a violation. Any *third* listener, or any `llama-server`
+process beyond the first, is a real breach.
 
 ---
 
