@@ -5,8 +5,8 @@ As-built solution design for the Sovereign MCP Platform.
 | File | Tracked | What it is |
 |---|---|---|
 | `index.html` | yes | **The source, and the deliverable.** Self-contained: the diagram is inline SVG, so it opens from disk with no network access and no sibling files. |
-| `architecture.svg` | **no** | Extracted from `index.html`. Useful for embedding elsewhere. |
-| `architecture.png` | **no** | Rasterised from the extracted SVG. |
+| `architecture.svg` | yes | **Derived, but committed.** Extracted from `index.html` so GitHub previews the diagram and the root README can embed it. |
+| `architecture.png` | no | Rasterised from the extracted SVG. Generate on demand. |
 
 Open it directly:
 
@@ -14,22 +14,25 @@ Open it directly:
 file:///M:/MCP_Project/design/index.html
 ```
 
-## Why only one file is tracked
+## One source, one derived copy
 
 The diagram used to live in its own `.svg` with the page referencing it. Once the
-page had to be self-contained, that would have meant the same markup existing in
-two places — and a raster claiming to depict a diagram it had quietly fallen
-behind. Neither copy would announce the drift.
+page had to be self-contained, that would have meant the same markup authored in
+two places, with nothing to announce when they drifted apart.
 
-So the direction is inverted: `index.html` holds the only copy, and the render
-script **extracts** from it. The artefacts cannot disagree with the page,
-because they are derived from it. Both are gitignored; neither is authored.
+So the direction is inverted. `index.html` holds the only **authored** copy;
+`scripts/render-design.sh` extracts the `<svg>` element from it and writes
+`architecture.svg`. Nothing is hand-edited in the extracted file.
 
-Cost worth knowing: GitHub renders a committed `.svg` in the file view but will
-not render `.html`, so the diagram is no longer previewable in the web UI. If
-that matters more than the single-file property, drop the `design/architecture.svg`
-line from `.gitignore` and commit the extracted copy — accepting that it then
-needs regenerating on every edit.
+`architecture.svg` is committed anyway, deliberately: GitHub renders a `.svg` in
+its file view and in README markdown, but will not render `.html`. Without it
+the diagram is invisible in the web UI, which is where most people meet the
+repository.
+
+> **Consequence.** A derived file under version control only stays honest if it
+> is regenerated. After editing the diagram, run the render script and commit
+> **both** `index.html` and `architecture.svg` in the same commit. A diff that
+> touches only one of them is a mistake.
 
 ## Regenerating the artefacts
 
@@ -38,8 +41,8 @@ wsl -d DockerEngine
 bash /mnt/m/MCP_Project/scripts/render-design.sh
 ```
 
-Produces `architecture.svg` (extracted) and `architecture.png` at 3120x2613 —
-2x the 1600pt canvas. Pass a width to override:
+Produces `architecture.svg` (extracted, **commit this**) and `architecture.png`
+at 3120x2613 — 2x the 1600pt canvas. Pass a width to override:
 
 ```bash
 bash scripts/render-design.sh 1600     # 1x
@@ -67,3 +70,5 @@ container has.
 3. Check the values that go stale. The diagram hardcodes the WSL host address
    (`172.28.64.1`, which can change after a reboot or `wsl --shutdown`) and the
    three image sizes, which move whenever dependencies change.
+4. Commit `index.html` **and** the regenerated `architecture.svg` together, so
+   the copy GitHub previews matches the page.
