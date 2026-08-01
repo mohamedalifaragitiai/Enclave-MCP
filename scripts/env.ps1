@@ -14,6 +14,13 @@ $env:HF_HOME               = "$ProjectRoot\.cache\huggingface"
 $env:FASTEMBED_CACHE_PATH  = "$ProjectRoot\.cache\fastembed"
 # ChromaDB phones home by default - HLD.md section 7 requires zero network egress
 $env:ANONYMIZED_TELEMETRY  = "False"
+# LangSmith ships with LangChain and traces to the cloud unless disabled
+$env:LANGSMITH_TRACING     = "false"
+$env:LANGCHAIN_TRACING_V2  = "false"
+
+# The one permitted inference endpoint (resource-governance.md section 3)
+$env:LLM_ENDPOINT          = "http://localhost:8001/v1"
+$env:LLM_MODEL             = "Qwen3-4B-Instruct-2507"
 $env:PIP_CACHE_DIR         = "$ProjectRoot\.cache\pip"
 
 # Temp redirected too - pip/uv unpack wheels here and would otherwise hit C:\

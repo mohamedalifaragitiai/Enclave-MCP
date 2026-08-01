@@ -1,0 +1,7 @@
+# Phase 3 - LangGraph agent acting as MCP host/client.
+mcp>=2.0.0
+langgraph>=0.2
+langchain-core>=0.3
+# Used only as an OpenAI-compatible HTTP client against the local llama-server;
+# no cloud endpoint is ever contacted (resource-governance.md section 3).
+langchain-openai>=0.2
