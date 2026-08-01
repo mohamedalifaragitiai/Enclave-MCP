@@ -1,0 +1,25 @@
+U.S. Energy Information Administration - Annual Energy Outlook
+Sample excerpt - Phase 1 test fixture, not an authoritative copy.
+
+Petroleum and Natural Gas Production
+Crude oil production is projected to remain near record levels through the projection
+period as producers develop tight oil resources. Natural gas production grows in
+response to demand from the liquefied natural gas export sector and from domestic
+electric power generation.
+
+Refining and Product Supply
+Refinery utilization rates remain sensitive to crude oil price differentials and to
+regional demand for distillate fuel oil. Petroleum product exports continue to grow,
+supported by refining capacity in the Gulf Coast region.
+
+Electric Power Sector
+Renewable generating capacity, principally solar photovoltaic and wind, accounts for
+the majority of capacity additions. Natural gas fired combined cycle plants continue
+to provide dispatchable generation to balance intermittent renewable output. Retirement
+of coal fired capacity continues across the projection period.
+
+Energy Consumption by Sector
+Industrial energy consumption grows fastest among end use sectors, driven by bulk
+chemicals and refining. Transportation energy consumption declines as vehicle fuel
+economy improves and electric vehicle adoption increases. Buildings sector consumption
+remains relatively flat as efficiency gains offset floorspace growth.

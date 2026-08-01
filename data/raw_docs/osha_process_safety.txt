@@ -1,0 +1,30 @@
+OSHA Process Safety Management of Highly Hazardous Chemicals (29 CFR 1910.119)
+Sample excerpt - Phase 1 test fixture, not an authoritative copy.
+
+Process Safety Information
+The employer shall complete a compilation of written process safety information
+before conducting any process hazard analysis. The compilation shall include
+information pertaining to the hazards of the highly hazardous chemicals used or
+produced by the process, information pertaining to the technology of the process,
+and information pertaining to the equipment in the process.
+
+Process Hazard Analysis
+The employer shall perform an initial process hazard analysis on processes covered
+by this standard. The process hazard analysis shall be appropriate to the complexity
+of the process and shall identify, evaluate, and control the hazards involved in the
+process. The analysis shall address the hazards of the process, the identification of
+any previous incident which had a likely potential for catastrophic consequences,
+engineering and administrative controls applicable to the hazards, and human factors.
+
+Mechanical Integrity
+The employer shall establish and implement written procedures to maintain the ongoing
+integrity of process equipment including pressure vessels, storage tanks, piping
+systems, relief and vent systems, emergency shutdown systems, controls, and pumps.
+Inspection and testing shall be performed on process equipment following recognized
+and generally accepted good engineering practices.
+
+Management of Change
+The employer shall establish and implement written procedures to manage changes to
+process chemicals, technology, equipment, and procedures. The procedures shall assure
+that the technical basis for the proposed change and the impact of the change on
+safety and health are addressed prior to any change.
