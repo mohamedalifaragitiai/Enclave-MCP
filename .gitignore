@@ -25,3 +25,7 @@ data/chroma_db/
 
 # Embedding model cache downloaded by the containerised rag_server
 data/.fastembed/
+
+# Rendered from design/architecture.svg, which is the authoritative source.
+# Regenerate with scripts/render-design.sh - see design/README.md.
+design/architecture.png

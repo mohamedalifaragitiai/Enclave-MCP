@@ -94,7 +94,7 @@
       <img src="architecture.svg" alt="Two-panel architecture diagram. Panel A shows the docker compose topology: a Windows host containing the DockerEngine WSL2 distro, inside which a compose network holds the agent, rag_server and docs_server containers communicating over HTTP with x-api-key headers, a bind-mounted ./data directory, and a Windows port proxy forwarding to the loopback-bound llama-server. Panel B shows the development topology where the same code runs over stdio with servers spawned as subprocesses.">
     </div>
     <figcaption class="links">
-      Source: <a href="architecture.svg">architecture.svg</a> · Raster: <a href="architecture.png">architecture.png</a> (3120×2430)
+      Source: <a href="architecture.svg">architecture.svg</a> · Raster: <code>architecture.png</code> — generated, not tracked (<a href="README.md">how to render</a>)
     </figcaption>
   </figure>
 
@@ -201,7 +201,8 @@ docker compose up -d rag_server docs_server
 docker compose run --rm agent "What does OSHA require for mechanical integrity?"</code></pre>
 
   <footer>
-    Generated from <code>design/architecture.svg</code>, the authoritative source. Regenerate the raster with
-    <code>rsvg-convert -w 3120 architecture.svg -o architecture.png</code>.
+    <code>design/architecture.svg</code> is the authoritative source and the only tracked form of the diagram.
+    The PNG is a build artefact: regenerate it with <code>bash scripts/render-design.sh</code> from inside the
+    DockerEngine distro. See <a href="README.md">design/README.md</a>.
   </footer>
 </main>
