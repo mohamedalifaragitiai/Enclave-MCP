@@ -1,208 +1,300 @@
 <title>Sovereign MCP Platform — As-Built Design</title>
 <style>
   :root {
-    --bg: #ffffff; --fg: #0f172a; --muted: #475569; --line: #e2e8f0;
-    --card: #f8fafc; --accent: #1d4ed8; --warn: #b45309; --ok: #15803d;
-    --code-bg: #f1f5f9;
+    --bg:#ffffff; --surface:#f8fafc; --fg:#0b1220; --fg-soft:#334155;
+    --muted:#64748b; --faint:#94a3b8; --line:#e2e8f0; --line-soft:#f1f5f9;
+    --accent:#2563eb; --amber:#b45309; --amber-bg:#fffbeb; --teal:#0d9488;
+    --code-bg:#f1f5f9; --shadow:0 1px 3px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04);
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0b1120; --fg: #e2e8f0; --muted: #94a3b8; --line: #1e293b;
-      --card: #111c30; --accent: #60a5fa; --warn: #fbbf24; --ok: #4ade80;
-      --code-bg: #16233b;
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0b1120; --surface:#0f1a2e; --fg:#f1f5f9; --fg-soft:#cbd5e1;
+      --muted:#94a3b8; --faint:#64748b; --line:#1e293b; --line-soft:#162238;
+      --accent:#60a5fa; --amber:#fbbf24; --amber-bg:#1c1608; --teal:#2dd4bf;
+      --code-bg:#16233b; --shadow:none;
     }
   }
-  :root[data-theme="dark"] {
-    --bg: #0b1120; --fg: #e2e8f0; --muted: #94a3b8; --line: #1e293b;
-    --card: #111c30; --accent: #60a5fa; --warn: #fbbf24; --ok: #4ade80;
-    --code-bg: #16233b;
+  :root[data-theme="dark"]{
+    --bg:#0b1120; --surface:#0f1a2e; --fg:#f1f5f9; --fg-soft:#cbd5e1;
+    --muted:#94a3b8; --faint:#64748b; --line:#1e293b; --line-soft:#162238;
+    --accent:#60a5fa; --amber:#fbbf24; --amber-bg:#1c1608; --teal:#2dd4bf;
+    --code-bg:#16233b; --shadow:none;
   }
-  :root[data-theme="light"] {
-    --bg: #ffffff; --fg: #0f172a; --muted: #475569; --line: #e2e8f0;
-    --card: #f8fafc; --accent: #1d4ed8; --warn: #b45309; --ok: #15803d;
-    --code-bg: #f1f5f9;
+  :root[data-theme="light"]{
+    --bg:#ffffff; --surface:#f8fafc; --fg:#0b1220; --fg-soft:#334155;
+    --muted:#64748b; --faint:#94a3b8; --line:#e2e8f0; --line-soft:#f1f5f9;
+    --accent:#2563eb; --amber:#b45309; --amber-bg:#fffbeb; --teal:#0d9488;
+    --code-bg:#f1f5f9; --shadow:0 1px 3px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04);
   }
 
-  body {
-    background: var(--bg); color: var(--fg);
-    font: 16px/1.65 "Segoe UI", -apple-system, Helvetica, Arial, sans-serif;
-    margin: 0; padding: 2.5rem 1.25rem 5rem;
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:0; background:var(--bg); color:var(--fg-soft);
+    font:15.5px/1.7 Inter,"Segoe UI",-apple-system,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
   }
-  main { max-width: 1180px; margin: 0 auto; }
-  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 .4rem; letter-spacing: -.02em; }
-  h2 {
-    font-size: 1.25rem; margin: 3rem 0 .75rem;
-    padding-bottom: .4rem; border-bottom: 1px solid var(--line);
-  }
-  h3 { font-size: 1rem; margin: 1.75rem 0 .5rem; }
-  .lede { color: var(--muted); font-size: 1.05rem; margin: 0 0 .5rem; }
-  .meta { color: var(--muted); font-size: .85rem; margin: 0 0 2rem; }
-  code, .mono {
-    font-family: "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
-    font-size: .88em; background: var(--code-bg);
-    padding: .12em .38em; border-radius: 4px;
-  }
-  pre {
-    background: var(--code-bg); padding: 1rem 1.1rem; border-radius: 8px;
-    overflow-x: auto; border: 1px solid var(--line); font-size: .85rem; line-height: 1.55;
-  }
-  pre code { background: none; padding: 0; }
+  main{max-width:1120px; margin:0 auto; padding:4rem 1.5rem 6rem}
 
-  figure { margin: 1.5rem 0 .5rem; }
-  .diagram {
-    background: #ffffff; border: 1px solid var(--line);
-    border-radius: 10px; padding: .75rem; overflow-x: auto;
+  /* ---------- masthead ---------- */
+  .masthead h1{
+    font-size:2.4rem; line-height:1.1; letter-spacing:-.03em;
+    color:var(--fg); font-weight:700; margin:0 0 .5rem;
   }
-  .diagram img { display: block; width: 100%; min-width: 900px; height: auto; }
-  figcaption { color: var(--muted); font-size: .85rem; margin-top: .6rem; }
-
-  .tablewrap { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: .92rem; margin: .75rem 0; }
-  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
-  td:first-child { white-space: nowrap; }
-
-  .callout {
-    background: var(--card); border: 1px solid var(--line);
-    border-left: 3px solid var(--accent);
-    border-radius: 6px; padding: .9rem 1.1rem; margin: 1.25rem 0;
+  .masthead p{font-size:1.075rem; color:var(--muted); margin:0 0 2rem; max-width:62ch}
+  .factstrip{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:1.5rem 1.75rem; padding:1.5rem 0;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    margin-bottom:3rem;
   }
-  .callout.warn { border-left-color: var(--warn); }
-  .callout p { margin: .35rem 0; }
-  .callout strong { color: var(--fg); }
+  .fact dt{
+    font-size:.66rem; font-weight:700; letter-spacing:.11em;
+    text-transform:uppercase; color:var(--faint); margin:0 0 .3rem;
+  }
+  .fact dd{margin:0; font-size:.9rem; color:var(--fg); line-height:1.45}
 
-  .pass { color: var(--ok); font-weight: 600; }
-  .flag { color: var(--warn); font-weight: 600; }
-  ul { padding-left: 1.25rem; }
-  li { margin: .3rem 0; }
-  .links a { color: var(--accent); margin-right: 1.25rem; }
-  footer { margin-top: 3.5rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+  /* ---------- structure ---------- */
+  section{margin-bottom:3.5rem}
+  h2{
+    font-size:1.35rem; letter-spacing:-.015em; color:var(--fg); font-weight:650;
+    margin:0 0 1rem; padding-bottom:.6rem; border-bottom:1px solid var(--line);
+  }
+  h2 .num{color:var(--faint); font-weight:600; margin-right:.6rem; font-size:.95rem}
+  h3{font-size:1rem; color:var(--fg); font-weight:650; margin:2rem 0 .5rem}
+  p{margin:0 0 1rem; max-width:74ch}
+  ul{margin:0 0 1rem; padding-left:1.1rem; max-width:74ch}
+  li{margin:.4rem 0}
+  li::marker{color:var(--faint)}
+  strong{color:var(--fg); font-weight:650}
+
+  code{
+    font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;
+    font-size:.86em; background:var(--code-bg); color:var(--fg);
+    padding:.1em .38em; border-radius:4px;
+  }
+  pre{
+    background:var(--code-bg); border:1px solid var(--line); border-radius:8px;
+    padding:1.1rem 1.25rem; overflow-x:auto; font-size:.84rem; line-height:1.6;
+    margin:0 0 1rem;
+  }
+  pre code{background:none; padding:0; font-size:inherit}
+
+  /* ---------- figure ---------- */
+  figure{margin:0 0 1rem}
+  .frame{
+    background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:.5rem; overflow-x:auto; box-shadow:var(--shadow);
+  }
+  .frame img{display:block; width:100%; min-width:940px; height:auto}
+  figcaption{
+    margin-top:.75rem; font-size:.8rem; color:var(--muted);
+    display:flex; gap:1.25rem; flex-wrap:wrap;
+  }
+  figcaption a{color:var(--accent); text-decoration:none}
+  figcaption a:hover{text-decoration:underline}
+
+  /* ---------- tables ---------- */
+  .tw{overflow-x:auto; margin:0 0 1rem}
+  table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+  thead th{
+    font-size:.66rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--faint); text-align:left; padding:0 .8rem .6rem 0;
+    border-bottom:1px solid var(--line); white-space:nowrap;
+  }
+  tbody td{
+    padding:.7rem .8rem .7rem 0; border-bottom:1px solid var(--line-soft);
+    vertical-align:top; color:var(--fg-soft);
+  }
+  tbody tr:last-child td{border-bottom:none}
+  td.k{color:var(--fg); font-weight:600; white-space:nowrap}
+
+  /* ---------- callout ---------- */
+  .note{
+    background:var(--surface); border:1px solid var(--line);
+    border-left:2.5px solid var(--accent); border-radius:0 8px 8px 0;
+    padding:1rem 1.25rem; margin:0 0 1.25rem;
+  }
+  .note.warn{border-left-color:var(--amber)}
+  .note p:last-child{margin-bottom:0}
+  .note .lbl{
+    display:block; font-size:.66rem; font-weight:700; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--faint); margin-bottom:.35rem;
+  }
+
+  .pill{
+    display:inline-block; font-size:.66rem; font-weight:700; letter-spacing:.06em;
+    padding:.15rem .5rem; border-radius:999px; white-space:nowrap;
+    background:var(--amber-bg); color:var(--amber); border:1px solid currentColor;
+  }
+  .ok{color:var(--teal); font-weight:650}
+
+  footer{
+    margin-top:4rem; padding-top:1.25rem; border-top:1px solid var(--line);
+    font-size:.82rem; color:var(--muted);
+  }
 </style>
 
 <main>
-  <h1>Sovereign MCP Platform — as-built design</h1>
-  <p class="lede">A local, open-source, air-gapped-style Model Context Protocol platform: a LangGraph agent acting as MCP host over two independent MCP servers, all reasoning done by one already-running local LLM.</p>
-  <p class="meta">Phases 1–6 complete · companion to <code>HLD.md</code> (architecture), <code>resource-governance.md</code> (policy) and <code>docs/design.md</code> (decision record)</p>
+  <header class="masthead">
+    <h1>Sovereign MCP Platform</h1>
+    <p>A local, fully open-source Model Context Protocol platform: a LangGraph agent acting as MCP host over two independent MCP servers, with every reasoning step served by one already-running local LLM. No cloud API, no second model, no writes to C:\.</p>
 
-  <div class="callout warn">
-    <p><strong>This diagram documents what runs, not what was drawn.</strong></p>
-    <p>HLD §2 shows three sibling containers connected by <code>stdio</code>. That topology is not realisable: stdio works by a parent process owning a child's stdin/stdout, and sibling containers share no process tree. Under compose those edges are HTTP. The discrepancy is recorded rather than silently patched, because <code>HLD.md</code> is the design baseline.</p>
-  </div>
+    <dl class="factstrip">
+      <div class="fact"><dt>Status</dt><dd>Phases 1–6 complete</dd></div>
+      <div class="fact"><dt>Transport</dt><dd>MCP over HTTP, API-key gated</dd></div>
+      <div class="fact"><dt>Inference</dt><dd>Qwen3-4B-Instruct-2507, shared</dd></div>
+      <div class="fact"><dt>Retrieval</dt><dd>ChromaDB + bge-small-en-v1.5</dd></div>
+      <div class="fact"><dt>Footprint</dt><dd>2.5 GB of images, all on M:\</dd></div>
+    </dl>
+  </header>
 
-  <figure>
-    <div class="diagram">
-      <img src="architecture.svg" alt="Two-panel architecture diagram. Panel A shows the docker compose topology: a Windows host containing the DockerEngine WSL2 distro, inside which a compose network holds the agent, rag_server and docs_server containers communicating over HTTP with x-api-key headers, a bind-mounted ./data directory, and a Windows port proxy forwarding to the loopback-bound llama-server. Panel B shows the development topology where the same code runs over stdio with servers spawned as subprocesses.">
+  <section>
+    <h2><span class="num">01</span>Runtime architecture</h2>
+
+    <div class="note warn">
+      <span class="lbl">Read this first</span>
+      <p>This diagram documents the system that <strong>runs</strong>, not the one originally drawn. HLD §2 shows three sibling containers joined by <code>stdio</code>. That topology is not realisable — stdio works by a parent process owning a child's stdin/stdout, and sibling containers share no process tree. Under compose those edges are HTTP. The discrepancy is recorded rather than quietly corrected, because <code>HLD.md</code> is the design baseline.</p>
     </div>
-    <figcaption class="links">
-      Source: <a href="architecture.svg">architecture.svg</a> · Raster: <code>architecture.png</code> — generated, not tracked (<a href="README.md">how to render</a>)
-    </figcaption>
-  </figure>
 
-  <h2>Components</h2>
-  <div class="tablewrap">
-    <table>
-      <thead><tr><th>Component</th><th>Responsibility</th><th>Transport in</th><th>Image</th></tr></thead>
-      <tbody>
-        <tr><td><code>agent</code></td><td>MCP host/client; owns the reasoning loop and routes between servers</td><td>—</td><td>355 MB <span class="pass">✓</span></td></tr>
-        <tr><td><code>rag_server</code></td><td>Vector search; exposes chunks as a resource and a grounded-answer prompt</td><td>HTTP <span class="mono">:8765/mcp</span> · stdio</td><td>933 MB <span class="flag">over budget</span></td></tr>
-        <tr><td><code>docs_server</code></td><td>PDF parsing, OCR and chunking of not-yet-ingested documents</td><td>HTTP <span class="mono">:8766/mcp</span> · stdio</td><td>1.23 GB <span class="pass">✓</span></td></tr>
-        <tr><td><code>llama-server</code></td><td>All inference. Shared, externally owned, never restarted by this project</td><td>HTTP <span class="mono">:8001</span></td><td>host process</td></tr>
-        <tr><td><code>ChromaDB</code></td><td>Persisted 384-dim vectors, file-based</td><td>embedded</td><td>bind mount</td></tr>
-      </tbody>
-    </table>
-  </div>
+    <figure>
+      <div class="frame">
+        <img src="architecture.svg" alt="Architecture diagram. A Windows host contains the DockerEngine WSL2 distro, within which a compose network holds three containers: agent, rag_server and docs_server. The agent calls both servers over HTTP with an API key. Both servers read a bind-mounted ./data directory holding the raw corpus and the Chroma vector store. Reasoning calls leave the compose network to a Windows port proxy, which forwards to a loopback-bound llama-server on port 8001.">
+      </div>
+      <figcaption>
+        <span>Source: <a href="architecture.svg">architecture.svg</a></span>
+        <span><code>architecture.png</code> is generated, not tracked — <a href="README.md">how to render</a></span>
+      </figcaption>
+    </figure>
+  </section>
 
-  <h2>The MCP primitives, and who owns what</h2>
-  <p>All three primitives are exercised end to end. The division of responsibility is the interesting part:</p>
-  <div class="tablewrap">
-    <table>
-      <thead><tr><th>Primitive</th><th>Owner</th><th>Note</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Tools</strong></td><td>servers</td><td>The server's JSON Schema is passed through untouched into OpenAI function specs. Adding a tool needs no host change.</td></tr>
-        <tr><td><strong>Prompts</strong></td><td>servers</td><td><code>rag_answer</code> is fetched via <code>prompts/get</code>, not hardcoded — the server owns how its corpus should be used.</td></tr>
-        <tr><td><strong>Resources</strong></td><td>host bridges them</td><td>Resources are host-controlled and not model-addressable. The host exposes <code>chunk://</code> as a synthetic <code>read_chunk</code> tool and translates the call back into <code>resources/read</code>.</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <section>
+    <h2><span class="num">02</span>Components</h2>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Component</th><th>Responsibility</th><th>Transport</th><th>Image</th></tr></thead>
+        <tbody>
+          <tr><td class="k">agent</td><td>MCP host and client; owns the reasoning loop and routes across servers</td><td>—</td><td>355 MB <span class="ok">✓</span></td></tr>
+          <tr><td class="k">rag_server</td><td>Vector search; exposes chunks as a resource and a grounded-answer prompt</td><td>HTTP <code>:8765</code> · stdio</td><td>933 MB <span class="pill">over budget</span></td></tr>
+          <tr><td class="k">docs_server</td><td>PDF parsing, OCR and chunking of documents not yet ingested</td><td>HTTP <code>:8766</code> · stdio</td><td>1.23 GB <span class="ok">✓</span></td></tr>
+          <tr><td class="k">llama-server</td><td>All inference. Shared, externally owned, never restarted by this project</td><td>HTTP <code>:8001</code></td><td>host process</td></tr>
+          <tr><td class="k">ChromaDB</td><td>Persisted 384-dimension vectors, file-based</td><td>embedded</td><td>bind mount</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-  <div class="callout">
-    <p><strong>Prompts are server-scoped; orchestration is not.</strong></p>
-    <p><code>rag_answer</code> ends by telling the model to abstain when search finds nothing relevant — correct while <code>rag_server</code> is alone, actively wrong once <code>docs_server</code> exists, because <em>not in the index</em> stopped meaning <em>not in the corpus</em>. Cross-server guidance is therefore composed by the host from its live routing table. Neither server knows the other exists.</p>
-  </div>
+  <section>
+    <h2><span class="num">03</span>Ownership of the MCP primitives</h2>
+    <p>All three primitives are exercised end to end. How responsibility divides between server and host is the part worth defending in review.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Primitive</th><th>Owner</th><th>Rationale</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Tools</td><td>Server</td><td>The server's JSON Schema passes through untouched into OpenAI function specs. Adding a tool needs no host change.</td></tr>
+          <tr><td class="k">Prompts</td><td>Server</td><td><code>rag_answer</code> is fetched via <code>prompts/get</code> rather than hardcoded — the server owns how its own corpus should be used.</td></tr>
+          <tr><td class="k">Resources</td><td>Host bridges</td><td>Resources are host-controlled and not model-addressable. The host exposes <code>chunk://</code> as a synthetic <code>read_chunk</code> tool and translates the call back into <code>resources/read</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
 
-  <h2>Request path</h2>
-  <pre><code>question
-  └─ agent: merges both servers' tools into one namespace
-     ├─ search_documents            → rag_server  (HTTP + x-api-key)
-     │    └─ "N files are NOT in this index: scanned_osha_hotwork.pdf"
-     ├─ parse_document              → docs_server (HTTP + x-api-key)
-     │    └─ pdfminer finds 0 chars → Tesseract OCR
-     └─ Qwen3 via host.docker.internal:8001 → port proxy → 127.0.0.1:8001
+    <div class="note">
+      <span class="lbl">Design tension</span>
+      <p>Prompts are server-scoped; orchestration is not. <code>rag_answer</code> ends by telling the model to abstain when search finds nothing relevant — correct while <code>rag_server</code> stands alone, actively wrong once <code>docs_server</code> exists, because <em>not in the index</em> stopped meaning <em>not in the corpus</em>. Cross-server guidance is therefore composed by the host from its live routing table. Neither server knows the other exists.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">04</span>Request path</h2>
+<pre><code>question
+  └─ agent merges both servers' tools into one namespace
+     ├─ 1  search_documents            → rag_server   (HTTP + x-api-key)
+     │       └─ "1 file is NOT in this index: scanned_osha_hotwork.pdf"
+     ├─ 2  parse_document              → docs_server  (HTTP + x-api-key)
+     │       └─ pdfminer finds 0 chars → Tesseract OCR
+     └─ 4  reasoning                   → host.docker.internal:8001
+              └─ 5  port proxy         → 127.0.0.1:8001
 grounded answer, cited to the source file</code></pre>
-  <p>That middle step is what makes multi-server routing work at all. Without <code>rag_server</code> disclosing files it cannot see, the agent abstained on a question whose answer sat in an un-ingested scanned PDF.</p>
+    <p>Step 1's disclosure is what makes multi-server routing work at all. Without <code>rag_server</code> reporting the files it cannot see, the agent abstained on a question whose answer sat in an un-ingested scanned PDF.</p>
+  </section>
 
-  <h2>Security boundaries</h2>
-  <ul>
-    <li><strong>API key at the transport edge</strong> — checked before any MCP handler runs, with <code>hmac.compare_digest</code> so early-mismatch timing leaks nothing.</li>
-    <li><strong>Fails closed</strong> — with the key env var unset the server refuses to start and exits non-zero, rather than starting unauthenticated.</li>
-    <li><strong>No published ports</strong> — servers are reachable only on the compose network.</li>
-    <li><strong>Path traversal refused</strong> — <code>docs_server</code> resolves filenames and compares against the corpus root; <code>../../../etc/passwd</code> is rejected.</li>
-    <li><strong>Docker socket never mounted</strong> — keeping stdio under compose would have required it, which is root-equivalent host access. Rejected in favour of HTTP.</li>
-    <li><strong>LLM stays loopback-bound</strong> — a port proxy on the WSL-facing adapter forwards to <code>127.0.0.1</code>, so inference is never exposed to the LAN and the shared model is never restarted.</li>
-  </ul>
-  <div class="callout warn">
-    <p><strong>What the API key is not.</strong> One shared secret, correctly placed. No per-user identity, no per-tool scoping, no rotation, no audit trail, no transport encryption, no rate limiting. The production successor is an identity provider issuing short-lived scoped tokens. This is the seed of an auth story, not a complete one.</p>
-  </div>
+  <section>
+    <h2><span class="num">05</span>Security boundaries</h2>
+    <ul>
+      <li><strong>API key at the transport edge</strong> — checked before any MCP handler runs, using <code>hmac.compare_digest</code> so early-mismatch timing leaks nothing.</li>
+      <li><strong>Fails closed</strong> — with the key env var unset the server refuses to start and exits non-zero, rather than starting unauthenticated.</li>
+      <li><strong>No published ports</strong> — servers are reachable only on the compose network.</li>
+      <li><strong>Path traversal refused</strong> — <code>docs_server</code> resolves filenames against the corpus root; <code>../../../etc/passwd</code> is rejected.</li>
+      <li><strong>Docker socket never mounted</strong> — preserving stdio under compose would have required it, which is root-equivalent host access. Rejected in favour of HTTP.</li>
+      <li><strong>Inference stays loopback-bound</strong> — a port proxy on the WSL-facing adapter forwards to <code>127.0.0.1</code>, so the model is never exposed to the LAN and the shared process is never restarted.</li>
+    </ul>
 
-  <h2>Verified, not asserted</h2>
-  <div class="tablewrap">
-    <table>
-      <thead><tr><th>Claim</th><th>Evidence</th></tr></thead>
-      <tbody>
-        <tr><td>OCR genuinely runs</td><td>pdfminer extracts <strong>0 characters</strong> from the fixture; the full page still comes back</td></tr>
-        <tr><td>Retrieval is semantic</td><td>“keeping machinery in working order” → <em>Mechanical Integrity</em> at 0.718, sharing no keywords</td></tr>
-        <tr><td>Model abstains</td><td>Out-of-corpus question returns a refusal; test also asserts no figure was invented</td></tr>
-        <tr><td>Auth enforced</td><td>Keyless POST <em>from inside</em> the compose network → <code>401</code></td></tr>
-        <tr><td>No runtime egress</td><td>0 requests to huggingface.co from the running container</td></tr>
-        <tr><td>Bind mounts only</td><td><code>docker volume ls</code> empty; sole mount is <code>./data</code></td></tr>
-        <tr><td>One LLM instance</td><td>Single <code>llama-server</code> process, unchanged PID across all six phases</td></tr>
-        <tr><td>C:\ untouched</td><td>Every project cache path on C:\ still stale from July; deltas attributed to Chrome, Explorer and RDP</td></tr>
-      </tbody>
-    </table>
-  </div>
+    <div class="note warn">
+      <span class="lbl">What the API key is not</span>
+      <p>One shared secret, correctly placed and correctly failing closed. There is no per-user identity, no per-tool scoping, no rotation, no audit trail, no transport encryption and no rate limiting. The production successor is an identity provider issuing short-lived scoped tokens. This is the seed of an auth story, not a complete one.</p>
+    </div>
+  </section>
 
-  <h2>Open discrepancies</h2>
-  <p>Recorded rather than patched — <code>resource-governance.md</code> §5 makes these deliberate edits, not side effects.</p>
-  <div class="tablewrap">
-    <table>
-      <thead><tr><th>#</th><th>Design says</th><th>Reality</th></tr></thead>
-      <tbody>
-        <tr><td>1</td><td>HLD §2: stdio between sibling containers</td><td>Not realisable; compose edges are HTTP</td></tr>
-        <tr><td>2</td><td>HLD §3: HTTP is a “Phase 5 variant”</td><td>HTTP is the default under compose</td></tr>
-        <tr><td>3</td><td>Policy §2: <code>rag_server</code> 500–700 MB</td><td><strong>933 MB.</strong> Largest single contributor is the Kubernetes client at 83 MB, pulled by chromadb for a distributed mode this file-based store never uses</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <section>
+    <h2><span class="num">06</span>Verified, not asserted</h2>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Claim</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td class="k">OCR genuinely runs</td><td>pdfminer extracts <strong>zero characters</strong> from the fixture; the full page still comes back</td></tr>
+          <tr><td class="k">Retrieval is semantic</td><td>“keeping machinery in working order” retrieves <em>Mechanical Integrity</em> at 0.718, sharing no keywords</td></tr>
+          <tr><td class="k">The model abstains</td><td>An out-of-corpus question returns a refusal; the test also asserts no figure was invented</td></tr>
+          <tr><td class="k">Auth is enforced</td><td>A keyless POST <em>from inside</em> the compose network returns <code>401</code></td></tr>
+          <tr><td class="k">No runtime egress</td><td>Zero requests to huggingface.co from the running container</td></tr>
+          <tr><td class="k">Bind mounts only</td><td><code>docker volume ls</code> is empty; the sole mount is <code>./data</code></td></tr>
+          <tr><td class="k">One LLM instance</td><td>A single <code>llama-server</code> process, unchanged PID across all six phases</td></tr>
+          <tr><td class="k">C:\ untouched</td><td>Every project cache path on C:\ remains stale from July; deltas attributed to Chrome, Explorer and RDP</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-  <h2>Known limitations</h2>
-  <ul>
-    <li>The scanned fixture is <strong>synthetic</strong> — the real OSHA/EIA PDF corpus is not yet present. Reproducible via <code>scripts/make_scanned_fixture.py</code>.</li>
-    <li>The 0.50 similarity floor is calibrated against three fixtures and <strong>needs retuning</strong> once the real corpus is ingested.</li>
-    <li><code>docs_server</code> output is not fed back into ChromaDB yet — OCR text reaches the agent but does not persist to the index.</li>
-    <li>Tool selection on a 4B model is not deterministic; verification scripts drive cross-server dispatch directly rather than relying on the model choosing it.</li>
-  </ul>
+  <section>
+    <h2><span class="num">07</span>Open discrepancies</h2>
+    <p>Recorded rather than patched — <code>resource-governance.md</code> §5 makes these deliberate edits, not side effects of a Dockerfile.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Design baseline says</th><th>Reality</th></tr></thead>
+        <tbody>
+          <tr><td class="k">HLD §2 — stdio between sibling containers</td><td>Not realisable; the compose edges are HTTP</td></tr>
+          <tr><td class="k">HLD §3 — HTTP is a “Phase 5 variant”</td><td>HTTP is the default under compose</td></tr>
+          <tr><td class="k">Policy §2 — rag_server 500–700 MB</td><td><strong>933 MB.</strong> The largest single contributor is an 83 MB Kubernetes client, pulled in by chromadb for a distributed mode this file-based store never uses</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-  <h2>Running it</h2>
-  <pre><code>wsl -d DockerEngine
+  <section>
+    <h2><span class="num">08</span>Known limitations</h2>
+    <ul>
+      <li>The scanned fixture is <strong>synthetic</strong> — the real OSHA/EIA PDF corpus is not yet present. Reproducible via <code>scripts/make_scanned_fixture.py</code>.</li>
+      <li>The 0.50 similarity floor is calibrated against three fixtures and <strong>needs retuning</strong> once the real corpus is ingested.</li>
+      <li><code>docs_server</code> output is not fed back into ChromaDB — OCR text reaches the agent but does not persist to the index.</li>
+      <li>Tool selection on a 4B model is not deterministic, so the verification scripts drive cross-server dispatch directly rather than relying on the model choosing it.</li>
+      <li>The diagram hardcodes the WSL host address and current image sizes; both drift and should be checked when regenerating.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="num">09</span>Running the stack</h2>
+<pre><code>wsl -d DockerEngine
 cd /mnt/m/MCP_Project
-cp .env.example .env          # then set real keys
+
+cp .env.example .env                 # then set real keys
 docker compose build
 docker compose up -d rag_server docs_server
 docker compose run --rm agent "What does OSHA require for mechanical integrity?"</code></pre>
+    <p>Without <code>RAG_SERVER_URL</code> and <code>DOCS_SERVER_URL</code> set, the same agent code runs against servers spawned as local subprocesses over stdio instead — useful for development, and the reasoning loop never learns which transport is in use.</p>
+  </section>
 
   <footer>
     <code>design/architecture.svg</code> is the authoritative source and the only tracked form of the diagram.
-    The PNG is a build artefact: regenerate it with <code>bash scripts/render-design.sh</code> from inside the
-    DockerEngine distro. See <a href="README.md">design/README.md</a>.
+    Regenerate the raster with <code>bash scripts/render-design.sh</code> from inside the DockerEngine distro.
+    See <a href="README.md">design/README.md</a>. Companion documents: <code>HLD.md</code>,
+    <code>resource-governance.md</code>, <code>docs/design.md</code>.
   </footer>
 </main>

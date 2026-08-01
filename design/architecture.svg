@@ -1,173 +1,200 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="1215" viewBox="0 0 1560 1215" font-family="DejaVu Sans, Segoe UI, Helvetica, Arial, sans-serif">
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="936" viewBox="0 0 1600 936">
+  <style>
+    .canvas      { fill: #ffffff; }
+    text         { font-family: "Inter", "Segoe UI", "DejaVu Sans", Helvetica, Arial, sans-serif; }
+
+    .title       { font-size: 27px; font-weight: 700; fill: #0b1220; letter-spacing: -0.4px; }
+    .subtitle    { font-size: 14px; fill: #64748b; }
+    .metaLabel   { font-size: 10px; font-weight: 700; fill: #94a3b8; letter-spacing: 1.1px; }
+    .metaValue   { font-size: 12px; fill: #334155; }
+
+    .band        { fill: #f8fafc; stroke: #e2e8f0; stroke-width: 1.5; }
+    .bandInner   { fill: #f1f5f9; stroke: #e2e8f0; stroke-width: 1.5; }
+    .bandNet     { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .bandLabel   { font-size: 10.5px; font-weight: 700; fill: #94a3b8; letter-spacing: 1.3px; }
+    .bandNote    { font-size: 11px; fill: #94a3b8; }
+
+    .card        { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.4; }
+    .cardTitle   { font-size: 17px; font-weight: 700; fill: #0b1220; }
+    .cardRole    { font-size: 12.5px; fill: #475569; }
+    .cardMeta    { font-size: 11px; fill: #94a3b8; }
+    .tag         { font-size: 9.5px; font-weight: 700; letter-spacing: 0.9px; }
+
+    .flow        { stroke: #94a3b8; stroke-width: 1.8; fill: none; }
+    .badgeC      { fill: #475569; }
+    .badgeT      { font-size: 11px; font-weight: 700; fill: #ffffff; }
+    .pill        { fill: #fffbeb; stroke: #f59e0b; stroke-width: 1; }
+    .pillT       { font-size: 9.5px; font-weight: 700; fill: #b45309; letter-spacing: 0.6px; }
+
+    .legendH     { font-size: 10.5px; font-weight: 700; fill: #94a3b8; letter-spacing: 1.3px; }
+    .legendT     { font-size: 12px; fill: #475569; }
+    .rule        { stroke: #e2e8f0; stroke-width: 1; }
+  </style>
+
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    <marker id="ah" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
     </marker>
-    <marker id="arrowAuth" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
-    </marker>
-    <marker id="arrowData" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a21caf"/>
-    </marker>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.07"/>
+    </filter>
   </defs>
 
-  <rect width="1560" height="1215" fill="#ffffff"/>
+  <rect class="canvas" width="1600" height="936"/>
 
-  <!-- ================= TITLE ================= -->
-  <text x="30" y="42" font-size="26" font-weight="700" fill="#0f172a">Sovereign MCP Platform - as-built architecture</text>
-  <text x="30" y="68" font-size="14" fill="#475569">Phases 1-6 complete. This reflects the system that runs, not the original HLD section 2 sketch: stdio cannot cross a container boundary, so the containerised edges are HTTP.</text>
+  <!-- ============ TITLE BLOCK ============ -->
+  <text class="title" x="48" y="62">Sovereign MCP Platform</text>
+  <text class="subtitle" x="48" y="86">As-built runtime architecture &#183; containerised deployment</text>
 
-  <!-- ================= PANEL A ================= -->
-  <text x="30" y="112" font-size="17" font-weight="700" fill="#0f172a">A. Production topology - docker compose</text>
+  <line class="rule" x1="48" y1="106" x2="1552" y2="106"/>
+  <text class="metaLabel" x="48"   y="128">STATUS</text>
+  <text class="metaValue" x="48"   y="146">Phases 1-6 complete</text>
+  <text class="metaLabel" x="300"  y="128">TRANSPORT</text>
+  <text class="metaValue" x="300"  y="146">MCP over HTTP, API-key gated</text>
+  <text class="metaLabel" x="640"  y="128">INFERENCE</text>
+  <text class="metaValue" x="640"  y="146">One shared local LLM, no cloud</text>
+  <text class="metaLabel" x="1000" y="128">STORAGE</text>
+  <text class="metaValue" x="1000" y="146">All state on M:\, zero writes to C:\</text>
+  <text class="metaLabel" x="1360" y="128">SOURCE</text>
+  <text class="metaValue" x="1360" y="146">design/architecture.svg</text>
 
-  <!-- Windows host -->
-  <rect x="30" y="126" width="1500" height="600" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
-  <text x="48" y="152" font-size="14" font-weight="700" fill="#334155">Windows host</text>
-  <text x="168" y="152" font-size="12" fill="#64748b">M:\MCP_Project  -  C:\ receives zero project writes</text>
+  <!-- ============ BOUNDARIES ============ -->
+  <rect class="band"      x="48"  y="180" width="1504" height="572" rx="10"/>
+  <text  class="bandLabel" x="70" y="206">WINDOWS HOST</text>
+  <text  class="bandNote"  x="196" y="206">M:\MCP_Project</text>
 
-  <!-- WSL distro -->
-  <rect x="55" y="168" width="1060" height="536" rx="8" fill="#eff6ff" stroke="#60a5fa" stroke-width="2"/>
-  <text x="73" y="194" font-size="13" font-weight="700" fill="#1d4ed8">WSL2 distro: DockerEngine</text>
-  <text x="285" y="194" font-size="11" fill="#3b82f6">ext4.vhdx on M:\WSL\DockerEngine - Docker data-root on M:\ by construction</text>
+  <rect class="bandInner" x="76"  y="222" width="1046" height="508" rx="9"/>
+  <text  class="bandLabel" x="98" y="248">WSL2 DISTRO &#183; DOCKERENGINE</text>
+  <text  class="bandNote"  x="330" y="248">ext4.vhdx on M:\ &#183; Docker data-root by construction</text>
 
-  <!-- compose network -->
-  <rect x="80" y="232" width="722" height="448" rx="8" fill="#f0fdf4" stroke="#4ade80" stroke-width="2"/>
-  <text x="252" y="256" font-size="12" font-weight="700" fill="#15803d">compose network: mcp_project_default</text>
-  <text x="252" y="273" font-size="11" fill="#16a34a">no published ports - servers unreachable from the host network</text>
+  <rect class="bandNet"   x="104" y="290" width="990" height="412" rx="8"/>
+  <text  class="bandLabel" x="126" y="316">COMPOSE NETWORK</text>
+  <text  class="bandNote"  x="286" y="316">no published ports &#183; unreachable from the host network</text>
 
-  <!-- agent -->
-  <rect x="103" y="290" width="252" height="132" rx="6" fill="#ffffff" stroke="#475569" stroke-width="1.6"/>
-  <text x="117" y="314" font-size="15" font-weight="700" fill="#0f172a">agent</text>
-  <text x="117" y="335" font-size="11.5" fill="#334155">LangGraph - MCP host / client</text>
-  <text x="117" y="353" font-size="11.5" fill="#334155">explicit StateGraph, tool cap 6</text>
-  <text x="117" y="371" font-size="11.5" fill="#334155">merges both servers' tools</text>
-  <text x="117" y="394" font-size="11" fill="#64748b">one-shot: compose run --rm agent</text>
-  <text x="117" y="411" font-size="11" fill="#64748b">agent:0.3.0 - 355 MB</text>
+  <!-- ============ AGENT ============ -->
+  <rect class="card" x="132" y="340" width="262" height="140" rx="8" filter="url(#sh)"/>
+  <rect x="132" y="340" width="262" height="3.5" rx="1.75" fill="#2563eb"/>
+  <text class="cardTitle" x="154" y="374">agent</text>
+  <rect x="252" y="360" width="74" height="17" rx="8.5" fill="#eff6ff"/>
+  <text class="tag" x="262" y="372" fill="#2563eb">MCP HOST</text>
+  <text class="cardRole" x="154" y="399">LangGraph reasoning loop</text>
+  <text class="cardRole" x="154" y="418">Merges both servers' tools</text>
+  <text class="cardMeta" x="154" y="443">Explicit StateGraph &#183; 6-round cap</text>
+  <text class="cardMeta" x="154" y="462">agent:0.3.0 &#183; 355 MB</text>
 
-  <!-- rag_server -->
-  <rect x="430" y="290" width="348" height="152" rx="6" fill="#ffffff" stroke="#475569" stroke-width="1.6"/>
-  <text x="444" y="314" font-size="15" font-weight="700" fill="#0f172a">rag_server</text>
-  <text x="444" y="335" font-size="11.5" fill="#334155">tool: search_documents (vector)</text>
-  <text x="444" y="353" font-size="11.5" fill="#334155">resource: chunk://{chunk_id}</text>
-  <text x="444" y="371" font-size="11.5" fill="#334155">prompt: rag_answer</text>
-  <text x="444" y="391" font-size="11" fill="#64748b">ChromaDB + bge-small-en-v1.5 (ONNX)</text>
-  <text x="444" y="408" font-size="11" fill="#64748b">weights baked in - no runtime egress</text>
-  <text x="444" y="429" font-size="11" fill="#b45309">rag_server:0.2.0 - 933 MB (over budget)</text>
+  <!-- ============ RAG SERVER ============ -->
+  <rect class="card" x="452" y="340" width="290" height="140" rx="8" filter="url(#sh)"/>
+  <rect x="452" y="340" width="290" height="3.5" rx="1.75" fill="#0d9488"/>
+  <text class="cardTitle" x="474" y="374">rag_server</text>
+  <rect x="620" y="360" width="92" height="17" rx="8.5" fill="#f0fdfa"/>
+  <text class="tag" x="630" y="372" fill="#0d9488">MCP SERVER</text>
+  <text class="cardRole" x="474" y="399">Semantic search over the corpus</text>
+  <text class="cardRole" x="474" y="418">Chunk resource &#183; answer prompt</text>
+  <text class="cardMeta" x="474" y="443">ChromaDB &#183; bge-small-en-v1.5 (ONNX)</text>
+  <text class="cardMeta" x="474" y="462">rag_server:0.2.0 &#183; 933 MB</text>
 
-  <!-- docs_server -->
-  <rect x="430" y="472" width="348" height="152" rx="6" fill="#ffffff" stroke="#475569" stroke-width="1.6"/>
-  <text x="444" y="496" font-size="15" font-weight="700" fill="#0f172a">docs_server</text>
-  <text x="444" y="517" font-size="11.5" fill="#334155">tools: list_documents, parse_document,</text>
-  <text x="444" y="535" font-size="11.5" fill="#334155">ocr_image, chunk_document</text>
-  <text x="444" y="555" font-size="11" fill="#64748b">unstructured + pdfminer + Tesseract 5.5</text>
-  <text x="444" y="572" font-size="11" fill="#64748b">containerised because Tesseract on</text>
-  <text x="444" y="589" font-size="11" fill="#64748b">Windows would write to C:\Program Files</text>
-  <text x="444" y="610" font-size="11" fill="#64748b">docs_server:0.1.0 - 1.23 GB</text>
+  <!-- ============ DOCS SERVER ============ -->
+  <rect class="card" x="452" y="530" width="290" height="140" rx="8" filter="url(#sh)"/>
+  <rect x="452" y="530" width="290" height="3.5" rx="1.75" fill="#7c3aed"/>
+  <text class="cardTitle" x="474" y="564">docs_server</text>
+  <rect x="620" y="550" width="92" height="17" rx="8.5" fill="#f5f3ff"/>
+  <text class="tag" x="630" y="562" fill="#7c3aed">MCP SERVER</text>
+  <text class="cardRole" x="474" y="589">PDF parsing and OCR</text>
+  <text class="cardRole" x="474" y="608">Text-native first, OCR fallback</text>
+  <text class="cardMeta" x="474" y="633">unstructured &#183; Tesseract 5.5</text>
+  <text class="cardMeta" x="474" y="652">docs_server:0.1.0 &#183; 1.23 GB</text>
 
-  <!-- data bind mount -->
-  <rect x="830" y="290" width="258" height="334" rx="6" fill="#fdf4ff" stroke="#d946ef" stroke-width="1.6"/>
-  <text x="844" y="314" font-size="14" font-weight="700" fill="#86198f">./data</text>
-  <text x="844" y="334" font-size="11" fill="#a21caf">bind mount -> /app/data</text>
-  <text x="844" y="351" font-size="11" fill="#a21caf">no named volumes at all</text>
-  <text x="844" y="384" font-size="12" font-weight="700" fill="#86198f">raw_docs/</text>
-  <text x="844" y="402" font-size="11" fill="#a21caf">source corpus, text + scanned PDF</text>
-  <text x="844" y="432" font-size="12" font-weight="700" fill="#86198f">chroma_db/</text>
-  <text x="844" y="450" font-size="11" fill="#a21caf">persisted vectors, 384-dim</text>
-  <text x="844" y="486" font-size="11" fill="#7e22ce">All state visible on M:\ and</text>
-  <text x="844" y="503" font-size="11" fill="#7e22ce">auditable from Windows.</text>
-  <text x="844" y="536" font-size="11" fill="#7e22ce">Nothing lands in Docker's</text>
-  <text x="844" y="553" font-size="11" fill="#7e22ce">internal volume store.</text>
+  <!-- ============ DATA ============ -->
+  <rect class="card" x="800" y="340" width="262" height="330" rx="8" filter="url(#sh)"/>
+  <rect x="800" y="340" width="262" height="3.5" rx="1.75" fill="#db2777"/>
+  <text class="cardTitle" x="822" y="374">./data</text>
+  <rect x="944" y="360" width="86" height="17" rx="8.5" fill="#fdf2f8"/>
+  <text class="tag" x="954" y="372" fill="#db2777">BIND MOUNT</text>
+  <text class="cardRole" x="822" y="401">Mounted at /app/data</text>
 
-  <!-- port proxy -->
-  <rect x="1160" y="232" width="345" height="118" rx="6" fill="#fff1f2" stroke="#fb7185" stroke-width="1.6"/>
-  <text x="1174" y="256" font-size="14" font-weight="700" fill="#9f1239">Windows port proxy</text>
-  <text x="1174" y="277" font-size="11.5" fill="#be123c">172.28.64.1:8001 -> 127.0.0.1:8001</text>
-  <text x="1174" y="295" font-size="11" fill="#be123c">IP Helper (netsh portproxy)</text>
-  <text x="1174" y="313" font-size="11" fill="#be123c">firewall: TCP 8001 from WSL subnet only</text>
-  <text x="1174" y="335" font-size="11" fill="#9f1239">LLM stays loopback-bound to the LAN</text>
+  <line class="rule" x1="822" y1="420" x2="1040" y2="420"/>
+  <text class="cardRole" x="822" y="446">raw_docs/</text>
+  <text class="cardMeta" x="822" y="465">Source corpus &#183; text and scanned</text>
+  <text class="cardRole" x="822" y="500">chroma_db/</text>
+  <text class="cardMeta" x="822" y="519">Persisted vectors &#183; 384-dim</text>
+  <line class="rule" x1="822" y1="546" x2="1040" y2="546"/>
+  <text class="cardMeta" x="822" y="572">No named volumes anywhere,</text>
+  <text class="cardMeta" x="822" y="591">so every byte of state stays</text>
+  <text class="cardMeta" x="822" y="610">visible and auditable on M:\.</text>
 
-  <!-- llama-server -->
-  <rect x="1160" y="418" width="345" height="176" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.8"/>
-  <text x="1174" y="444" font-size="15" font-weight="700" fill="#92400e">llama-server :8001</text>
-  <text x="1174" y="466" font-size="11.5" fill="#a16207">Qwen3-4B-Instruct-2507 Q4_K_M</text>
-  <text x="1174" y="484" font-size="11.5" fill="#a16207">GPU-resident, -c 4096, q8_0 KV</text>
-  <text x="1174" y="507" font-size="11" fill="#a16207">Shared external dependency - owned by</text>
-  <text x="1174" y="524" font-size="11" fill="#a16207">another project, never restarted here.</text>
-  <text x="1174" y="547" font-size="11" fill="#a16207">Exactly ONE LLM process (policy 3).</text>
-  <text x="1174" y="570" font-size="11" fill="#92400e">Bound 127.0.0.1 - hence the proxy above.</text>
+  <!-- ============ PORT PROXY ============ -->
+  <rect class="card" x="1244" y="300" width="270" height="112" rx="8" filter="url(#sh)"/>
+  <rect x="1244" y="300" width="270" height="3.5" rx="1.75" fill="#64748b"/>
+  <text class="cardTitle" x="1266" y="334">Port proxy</text>
+  <text class="cardRole" x="1266" y="359">172.28.64.1:8001 -&gt; loopback</text>
+  <text class="cardMeta" x="1266" y="382">netsh portproxy &#183; IP Helper</text>
+  <text class="cardMeta" x="1266" y="400">Firewall scoped to WSL subnet</text>
 
-  <!-- arrows: agent -> rag -->
-  <line x1="355" y1="352" x2="428" y2="352" stroke="#b91c1c" stroke-width="2" marker-end="url(#arrowAuth)"/>
-  <text x="360" y="330" font-size="9.5" fill="#b91c1c">MCP/HTTP</text>
-  <text x="360" y="342" font-size="9.5" fill="#b91c1c">x-api-key</text>
+  <!-- ============ LLM ============ -->
+  <rect class="card" x="1244" y="470" width="270" height="150" rx="8" filter="url(#sh)"/>
+  <rect x="1244" y="470" width="270" height="3.5" rx="1.75" fill="#f59e0b"/>
+  <text class="cardTitle" x="1266" y="504">llama-server</text>
+  <rect x="1266" y="516" width="122" height="17" rx="8.5" fill="#fffbeb"/>
+  <text class="tag" x="1276" y="528" fill="#b45309">EXTERNAL &#183; SHARED</text>
+  <text class="cardRole" x="1266" y="556">Qwen3-4B-Instruct-2507</text>
+  <text class="cardMeta" x="1266" y="578">Q4_K_M &#183; GPU-resident &#183; :8001</text>
+  <text class="cardMeta" x="1266" y="597">Bound 127.0.0.1 &#183; one instance</text>
 
-  <!-- arrows: agent -> docs -->
-  <path d="M 229 422 L 229 548 L 428 548" fill="none" stroke="#b91c1c" stroke-width="2" marker-end="url(#arrowAuth)"/>
-  <text x="240" y="470" font-size="10.5" fill="#b91c1c">MCP / HTTP</text>
-  <text x="240" y="485" font-size="10.5" fill="#b91c1c">x-api-key</text>
+  <!-- ============ FLOWS ============ -->
+  <!-- 1 agent -> rag -->
+  <line class="flow" x1="394" y1="392" x2="448" y2="392" marker-end="url(#ah)"/>
+  <circle class="badgeC" cx="421" cy="368" r="10"/>
+  <text class="badgeT" x="421" y="372" text-anchor="middle">1</text>
 
-  <!-- arrows: servers -> data -->
-  <line x1="778" y1="360" x2="828" y2="360" stroke="#a21caf" stroke-width="2" marker-end="url(#arrowData)"/>
-  <line x1="778" y1="548" x2="828" y2="548" stroke="#a21caf" stroke-width="2" marker-end="url(#arrowData)"/>
+  <!-- 2 agent -> docs -->
+  <path class="flow" d="M263,480 L263,600 L448,600" marker-end="url(#ah)"/>
+  <circle class="badgeC" cx="263" cy="540" r="10"/>
+  <text class="badgeT" x="263" y="544" text-anchor="middle">2</text>
 
-  <!-- arrow: agent -> proxy -->
-  <path d="M 229 290 L 229 212 L 1332 212 L 1332 230" fill="none" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="762" y="206" font-size="11.5" fill="#334155">LLM_ENDPOINT = http://host.docker.internal:8001/v1</text>
+  <!-- api key pills -->
+  <rect class="pill" x="386" y="404" width="70" height="18" rx="9"/>
+  <text class="pillT" x="421" y="417" text-anchor="middle">API KEY</text>
+  <rect class="pill" x="298" y="578" width="70" height="18" rx="9"/>
+  <text class="pillT" x="333" y="591" text-anchor="middle">API KEY</text>
 
-  <!-- arrow: proxy -> llama -->
-  <line x1="1332" y1="350" x2="1332" y2="416" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="1345" y="388" font-size="11" fill="#334155">forwards to loopback</text>
+  <!-- 3 servers -> data -->
+  <line class="flow" x1="744" y1="392" x2="796" y2="392" marker-end="url(#ah)"/>
+  <circle class="badgeC" cx="770" cy="368" r="10"/>
+  <text class="badgeT" x="770" y="372" text-anchor="middle">3</text>
+  <line class="flow" x1="744" y1="600" x2="796" y2="600" marker-end="url(#ah)"/>
+  <circle class="badgeC" cx="770" cy="624" r="10"/>
+  <text class="badgeT" x="770" y="628" text-anchor="middle">3</text>
 
-  <!-- panel A footnote -->
-  <text x="80" y="700" font-size="11.5" fill="#b45309">extra_hosts maps host.docker.internal to 172.28.64.1 (the vEthernet WSL address), NOT host-gateway - which resolves to the distro's own bridge and silently fails to reach the LLM.</text>
+  <!-- 4 agent -> proxy -->
+  <path class="flow" d="M350,340 L350,272 L1379,272 L1379,296" marker-end="url(#ah)"/>
+  <circle class="badgeC" cx="820" cy="272" r="10"/>
+  <text class="badgeT" x="820" y="276" text-anchor="middle">4</text>
 
-  <!-- ================= PANEL B ================= -->
-  <text x="30" y="772" font-size="17" font-weight="700" fill="#0f172a">B. Development topology - same code, stdio transport</text>
-  <text x="30" y="794" font-size="13" fill="#475569">With RAG_SERVER_URL / DOCS_SERVER_URL unset, the host spawns servers as subprocesses instead. The reasoning loop never learns which transport is in use.</text>
+  <!-- 5 proxy -> llm -->
+  <line class="flow" x1="1379" y1="412" x2="1379" y2="466" marker-end="url(#ah)"/>
+  <circle class="badgeC" cx="1379" cy="439" r="10"/>
+  <text class="badgeT" x="1379" y="443" text-anchor="middle">5</text>
 
-  <rect x="30" y="810" width="1500" height="370" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
-  <text x="48" y="836" font-size="14" font-weight="700" fill="#334155">Windows host - .venv</text>
+  <!-- ============ LEGEND ============ -->
+  <line class="rule" x1="48" y1="800" x2="1552" y2="800"/>
+  <text class="legendH" x="48" y="826">REQUEST PATH</text>
 
-  <rect x="60" y="856" width="290" height="118" rx="6" fill="#ffffff" stroke="#475569" stroke-width="1.6"/>
-  <text x="74" y="880" font-size="14" font-weight="700" fill="#0f172a">agent/host.py</text>
-  <text x="74" y="901" font-size="11.5" fill="#334155">LangGraph MCP host</text>
-  <text x="74" y="919" font-size="11.5" fill="#334155">spawns servers directly</text>
-  <text x="74" y="941" font-size="11" fill="#64748b">python agent/host.py "question"</text>
-  <text x="74" y="959" font-size="11" fill="#64748b">--no-docs runs rag only</text>
+  <circle class="badgeC" cx="58"  cy="860" r="10"/><text class="badgeT" x="58"  y="864" text-anchor="middle">1</text>
+  <text class="legendT" x="78" y="864">Agent calls search_documents over HTTP</text>
 
-  <rect x="430" y="856" width="300" height="118" rx="6" fill="#ffffff" stroke="#475569" stroke-width="1.6"/>
-  <text x="444" y="880" font-size="14" font-weight="700" fill="#0f172a">rag_server (subprocess)</text>
-  <text x="444" y="901" font-size="11.5" fill="#334155">same server.py, --transport stdio</text>
-  <text x="444" y="919" font-size="11.5" fill="#334155">reads ./data/chroma_db directly</text>
-  <text x="444" y="944" font-size="11" fill="#64748b">stdout IS the protocol wire -</text>
-  <text x="444" y="961" font-size="11" fill="#64748b">all logging goes to stderr</text>
+  <circle class="badgeC" cx="58"  cy="892" r="10"/><text class="badgeT" x="58"  y="896" text-anchor="middle">2</text>
+  <text class="legendT" x="78" y="896">Falls through to parse_document when a file is unindexed</text>
 
-  <rect x="795" y="836" width="360" height="160" rx="8" fill="#eff6ff" stroke="#60a5fa" stroke-width="2"/>
-  <text x="811" y="858" font-size="12" font-weight="700" fill="#1d4ed8">DockerEngine distro</text>
-  <rect x="815" y="872" width="320" height="106" rx="6" fill="#ffffff" stroke="#475569" stroke-width="1.6"/>
-  <text x="829" y="896" font-size="14" font-weight="700" fill="#0f172a">docs_server</text>
-  <text x="829" y="917" font-size="11.5" fill="#334155">docker run --rm -i</text>
-  <text x="829" y="935" font-size="11" fill="#64748b">still stdio: container stdin/stdout</text>
-  <text x="829" y="952" font-size="11" fill="#64748b">are the MCP wire - possible only</text>
-  <text x="829" y="969" font-size="11" fill="#64748b">because the host is outside it</text>
+  <circle class="badgeC" cx="560" cy="860" r="10"/><text class="badgeT" x="560" y="864" text-anchor="middle">3</text>
+  <text class="legendT" x="580" y="864">Servers read the bind-mounted corpus and vector store</text>
 
-  <rect x="1210" y="856" width="290" height="118" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.8"/>
-  <text x="1224" y="880" font-size="14" font-weight="700" fill="#92400e">llama-server :8001</text>
-  <text x="1224" y="901" font-size="11.5" fill="#a16207">reached at localhost - no</text>
-  <text x="1224" y="919" font-size="11.5" fill="#a16207">proxy needed from the host</text>
-  <text x="1224" y="944" font-size="11" fill="#a16207">Same single instance as panel A.</text>
+  <circle class="badgeC" cx="560" cy="892" r="10"/><text class="badgeT" x="560" y="896" text-anchor="middle">4</text>
+  <text class="legendT" x="580" y="896">Reasoning calls go to host.docker.internal:8001</text>
 
-  <line x1="350" y1="905" x2="428" y2="905" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="345" y="896" font-size="10.5" fill="#334155">stdio (MCP)</text>
+  <circle class="badgeC" cx="1100" cy="860" r="10"/><text class="badgeT" x="1100" y="864" text-anchor="middle">5</text>
+  <text class="legendT" x="1120" y="864">Proxy forwards to the loopback-bound model</text>
 
-  <path d="M 205 974 L 205 1035 L 975 1035 L 975 998" fill="none" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="520" y="1052" font-size="10.5" fill="#334155">stdio over docker run -i</text>
-
-  <path d="M 340 856 L 340 823 L 1355 823 L 1355 854" fill="none" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="700" y="817" font-size="10.5" fill="#334155">http://localhost:8001/v1</text>
-
-  <text x="60" y="1100" font-size="12" font-weight="700" fill="#0f172a">Why two topologies exist</text>
-  <text x="60" y="1120" font-size="11.5" fill="#475569">stdio has no network surface at all, which is the stronger posture for a single-user air-gapped box - there is no port to firewall and no key to rotate.</text>
-  <text x="60" y="1138" font-size="11.5" fill="#475569">But stdio needs a parent process owning the child's stdin/stdout, and sibling containers share no process tree. Containerisation therefore forces HTTP,</text>
-  <text x="60" y="1156" font-size="11.5" fill="#475569">which is why the Phase 5 auth work turned out to be a prerequisite for Phase 6 rather than an optional demonstration.</text>
+  <rect class="pill" x="1090" y="883" width="70" height="18" rx="9"/>
+  <text class="pillT" x="1125" y="896" text-anchor="middle">API KEY</text>
+  <text class="legendT" x="1172" y="896">Checked before any MCP handler runs</text>
 </svg>
